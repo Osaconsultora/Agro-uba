@@ -1,0 +1,1215 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Gestión de Producción · Agroalimentaria UBA</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:Arial,sans-serif;font-size:14px;background:#f4f6f9;color:#222}
+.app-header{background:#003087;color:white;padding:14px 24px;display:flex;align-items:center;gap:14px}
+.app-header h1{font-size:18px;font-weight:600;color:white;margin:0}
+.logo-circle{width:40px;height:40px;background:rgba(255,255,255,0.2);border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:14px;color:white;flex-shrink:0}
+.sync-bar{background:#1a5276;padding:6px 24px;display:flex;align-items:center;gap:12px;font-size:12px;color:rgba(255,255,255,0.85)}
+.sync-dot{width:8px;height:8px;border-radius:50%;background:#4caf50;flex-shrink:0}
+.sync-dot.syncing{background:#ff9800;animation:pulse 1s infinite}
+.sync-dot.error{background:#f44336}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.4}}
+.nav{background:#1a5276;display:flex;gap:2px;padding:0 6px;flex-wrap:wrap}
+.nav-btn{padding:9px 13px;font-size:12px;color:rgba(255,255,255,0.75);border:none;background:none;cursor:pointer;border-bottom:3px solid transparent;font-family:Arial,sans-serif;transition:all 0.15s;white-space:nowrap}
+.nav-btn:hover{color:white;background:rgba(255,255,255,0.08)}
+.nav-btn.active{color:white;border-bottom:3px solid #4fc3f7;background:rgba(255,255,255,0.1)}
+.content{padding:20px;min-height:600px}
+.section{display:none}.section.active{display:block}
+.card{background:white;border:1px solid #dde3ed;border-radius:8px;padding:18px;margin-bottom:14px;box-shadow:0 1px 3px rgba(0,0,0,0.06)}
+.card-title{font-size:13px;font-weight:600;color:#003087;margin-bottom:14px;padding-bottom:10px;border-bottom:1px solid #eef0f5;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.dot{width:8px;height:8px;border-radius:50%;background:#003087;flex-shrink:0}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px}
+.grid4{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+.metric{background:#f0f4fa;border-radius:8px;padding:14px;text-align:center}
+.metric .val{font-size:22px;font-weight:600;color:#003087}
+.metric .lbl{font-size:11px;color:#666;margin-top:4px}
+.metric.green .val{color:#2e7d32}.metric.amber .val{color:#b45309}.metric.red .val{color:#b91c1c}
+label{font-size:12px;color:#555;display:block;margin-bottom:5px;font-weight:500}
+input,select{width:100%;padding:8px 10px;font-size:13px;border:1px solid #cdd5e0;border-radius:6px;background:white;color:#222;font-family:Arial,sans-serif}
+input:focus,select:focus{outline:none;border-color:#003087;box-shadow:0 0 0 2px rgba(0,48,135,0.12)}
+.btn{padding:8px 18px;border-radius:6px;font-size:13px;cursor:pointer;font-family:Arial,sans-serif;font-weight:600;border:1px solid #cdd5e0;background:white;color:#333;transition:all 0.15s}
+.btn.primary{background:#003087;color:white;border-color:#003087}
+.btn.success{background:#2e7d32;color:white;border-color:#2e7d32}
+.btn.danger{background:#b91c1c;color:white;border-color:#b91c1c}
+.btn.warning{background:#b45309;color:white;border-color:#b45309}
+.btn.info{background:#1a5276;color:white;border-color:#1a5276}
+.btn.sm{padding:4px 10px;font-size:11px}
+.btn.export{background:#1b5e20;color:white;border-color:#1b5e20;font-size:12px;padding:6px 14px}
+.btn-row{display:flex;gap:8px;margin-top:14px;flex-wrap:wrap;align-items:center}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th{background:#003087;color:white;padding:9px 12px;text-align:left;font-weight:600;font-size:12px}
+td{padding:8px 12px;border-bottom:1px solid #eef0f5;color:#222;vertical-align:middle}
+tr:hover td{background:#f8faff}
+.badge{display:inline-block;padding:3px 10px;border-radius:12px;font-size:11px;font-weight:600}
+.badge.ok{background:#e8f5e9;color:#1b5e20}.badge.bajo{background:#fff3e0;color:#e65100}.badge.critico{background:#fce4ec;color:#880e4f}
+.badge.lleno{background:#e8f5e9;color:#1b5e20}.badge.parcial{background:#fff3e0;color:#e65100}.badge.vacio{background:#f5f5f5;color:#999}
+.badge.prod{background:#e3f2fd;color:#003087}.badge.dep{background:#e8f5e9;color:#1b5e20}
+.badge.entrada{background:#e8f5e9;color:#1b5e20}.badge.salida{background:#fce4ec;color:#b91c1c}
+.frow{display:flex;gap:12px;align-items:flex-end;flex-wrap:wrap}
+.fg{flex:1;min-width:110px}
+.toast{position:fixed;top:20px;right:20px;background:#003087;color:white;padding:12px 20px;border-radius:8px;font-size:13px;z-index:9999;display:none;box-shadow:0 4px 12px rgba(0,0,0,0.2)}
+.cb{background:#e8f0fe;border-left:4px solid #003087;padding:12px 16px;border-radius:0 8px 8px 0;margin-top:12px}
+.cr{display:flex;justify-content:space-between;padding:4px 0;font-size:13px}
+.cr.total{font-weight:700;border-top:1px solid #bccbf0;padding-top:8px;margin-top:6px}
+.cr.better{color:#2e7d32}.cr.worse{color:#b91c1c}
+.tab-sub{display:flex;gap:6px;margin-bottom:14px;flex-wrap:wrap}
+.tsb{padding:6px 14px;font-size:12px;border-radius:6px;border:1px solid #cdd5e0;background:white;cursor:pointer;color:#555;font-family:Arial,sans-serif;font-weight:500}
+.tsb.active{background:#003087;color:white;border-color:#003087}
+.hrow{display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid #eef0f5;font-size:13px}
+.hrow:last-child{border-bottom:none}
+.mc{background:#f8faff;border-radius:6px;padding:10px 16px;margin-bottom:8px;display:flex;justify-content:space-between;align-items:center;font-size:12px;gap:8px;flex-wrap:wrap;border:1px solid #eef0f5}
+.empty{color:#999;font-size:13px;text-align:center;padding:28px;font-style:italic}
+.lo{position:fixed;inset:0;background:rgba(255,255,255,0.9);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:9998;gap:16px}
+.sp{width:40px;height:40px;border:4px solid #e3f2fd;border-top:4px solid #003087;border-radius:50%;animation:spin 0.8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.ib{background:#e3f2fd;border:1px solid #90caf9;border-radius:6px;padding:10px 14px;font-size:12px;margin-bottom:12px}
+.wb{background:#fff3cd;border:1px solid #ffc107;border-radius:6px;padding:10px 14px;font-size:12px;margin-top:8px}
+.hb{background:#fff3cd;border:1px solid #ffc107;border-radius:6px;padding:10px 14px;font-size:12px;margin-top:8px}
+.bgs{background:#f8faff;border:1px solid #cdd5e0;border-radius:6px;padding:10px;margin-top:8px}
+.bcr{display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:1px solid #eef0f5;font-size:13px}
+.bcr:last-child{border-bottom:none}
+.bcr input[type=checkbox]{width:16px;height:16px;cursor:pointer;flex-shrink:0}
+.bsr{background:#e8f5e9;border:1px solid #a5d6a7;border-radius:6px;padding:8px 12px;font-size:12px;margin-top:6px}
+.mo{position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:9990;display:none;align-items:center;justify-content:center}
+.mo.open{display:flex}
+.md{background:white;border-radius:10px;padding:24px;width:90%;max-width:640px;max-height:85vh;overflow-y:auto;box-shadow:0 8px 32px rgba(0,0,0,0.2)}
+.mt{font-size:16px;font-weight:600;color:#003087;margin-bottom:16px;padding-bottom:10px;border-bottom:1px solid #eef0f5}
+.di{display:inline-block;padding:4px 12px;border-radius:20px;font-size:13px;font-weight:600}
+.di.bajo{background:#e8f5e9;color:#2e7d32}.di.medio{background:#fff3e0;color:#e65100}.di.alto{background:#fce4ec;color:#b91c1c}
+.proc-tag{display:inline-block;padding:2px 8px;border-radius:4px;font-size:11px;font-weight:600;background:#e3f2fd;color:#003087;margin-left:6px}
+</style>
+</head>
+<body>
+<div id="toast" class="toast"></div>
+<div id="loading-overlay" class="lo"><div class="sp"></div><p style="color:#003087;font-weight:600">Conectando...</p></div>
+
+<div id="modal-form" class="mo">
+  <div class="md"><div class="mt">Editar formulación</div><div id="mfb"></div>
+  <div class="btn-row"><button class="btn primary" onclick="guardarEdicionF()">Guardar</button><button class="btn" onclick="cm('modal-form')">Cancelar</button></div></div>
+</div>
+<div id="modal-balde" class="mo">
+  <div class="md"><div class="mt" id="mbt">Balde</div><div id="mbb"></div>
+  <div class="btn-row"><button class="btn" onclick="cm('modal-balde')">Cerrar</button></div></div>
+</div>
+<div id="modal-kardex" class="mo">
+  <div class="md" style="max-width:800px"><div class="mt" id="mkt">Kardex</div><div id="mkb"></div>
+  <div class="btn-row"><button class="btn" onclick="cm('modal-kardex')">Cerrar</button><button class="btn export" onclick="exportarKardexModal()">⬇ Excel</button></div></div>
+</div>
+
+<div class="app-header">
+  <div class="logo-circle">AB</div>
+  <div><h1>Gestión de Producción · Agroalimentaria</h1><div style="font-size:12px;opacity:0.85;color:white">Escuela Agropecuaria UBA · Base de datos compartida</div></div>
+</div>
+<div class="sync-bar">
+  <div id="sync-dot" class="sync-dot"></div><span id="sync-status">Conectando...</span>
+  <span style="margin-left:auto;opacity:0.7" id="last-sync"></span>
+  <button class="btn sm" style="background:rgba(255,255,255,0.15);color:white;border-color:rgba(255,255,255,0.3);font-size:11px" onclick="syncNow()">↻ Sincronizar</button>
+</div>
+<div class="nav">
+  <button class="nav-btn active" onclick="goTab('dashboard',this)">Panel</button>
+  <button class="nav-btn" onclick="goTab('procesamiento',this)">Procesamiento MP</button>
+  <button class="nav-btn" onclick="goTab('insumos',this)">Insumos</button>
+  <button class="nav-btn" onclick="goTab('kardex',this)">Kardex</button>
+  <button class="nav-btn" onclick="goTab('formulaciones',this)">Formulaciones</button>
+  <button class="nav-btn" onclick="goTab('produccion',this)">Producción</button>
+  <button class="nav-btn" onclick="goTab('stock',this)">Stock</button>
+  <button class="nav-btn" onclick="goTab('costos',this)">Costos</button>
+  <button class="nav-btn" onclick="goTab('fijos',this)">Costos fijos</button>
+  <button class="nav-btn" onclick="goTab('historial',this)">Historial</button>
+</div>
+
+<div class="content">
+
+<!-- DASHBOARD -->
+<div id="tab-dashboard" class="section active">
+  <div class="grid4" style="margin-bottom:14px" id="dash-metrics"></div>
+  <div class="grid2">
+    <div class="card"><div class="card-title"><span class="dot"></span>Últimos lotes</div><div id="dash-lotes"></div></div>
+    <div class="card"><div class="card-title"><span class="dot" style="background:#b91c1c"></span>Alertas stock bajo</div><div id="dash-alertas"></div></div>
+  </div>
+  <div class="card"><div class="card-title"><span class="dot" style="background:#2e7d32"></span>Baldes con MP activa</div><div id="dash-baldes"></div></div>
+  <div class="card"><div class="card-title"><span class="dot"></span>Movimientos recientes</div><div id="dash-movs"></div></div>
+</div>
+
+<!-- PROCESAMIENTO MP -->
+<div id="tab-procesamiento" class="section">
+  <div class="tab-sub">
+    <button class="tsb active" onclick="stP('nuevo',this)">Nuevo proceso</button>
+    <button class="tsb" onclick="stP('baldes',this)">Stock de baldes</button>
+    <button class="tsb" onclick="stP('desperdicio',this)">Desperdicio</button>
+  </div>
+  <div id="proc-nuevo">
+    <div class="card">
+      <div class="card-title"><span class="dot"></span>Registrar proceso de MP fresca</div>
+      <div class="ib">Solo aparecen insumos marcados con "Requiere procesamiento previo". Creá el insumo primero si no está.</div>
+      <div class="frow">
+        <div class="fg"><label>Tipo de MP</label><select id="proc-tipo"><option>Fruta</option><option>Verdura</option><option>Lácteo</option></select></div>
+        <div class="fg"><label>Insumo de destino</label><select id="proc-ins-sel"><option value="">-- seleccionar --</option></select></div>
+        <div class="fg"><label>Fecha</label><input id="proc-fecha" type="date"></div>
+      </div>
+      <div class="frow" style="margin-top:10px">
+        <div class="fg"><label>Peso bruto total (kg)</label><input id="proc-bruto" type="number" placeholder="0" step="0.1" oninput="calcProc()"></div>
+        <div class="fg"><label>Proveedor / origen</label><input id="proc-proveedor" placeholder="opcional"></div>
+        <div class="fg"><label>Costo por kg bruto ($)</label><input id="proc-costo-kg" type="number" placeholder="0" step="0.1" oninput="calcProc()"></div>
+      </div>
+      <div style="margin-top:12px">
+        <div style="font-size:13px;font-weight:600;color:#1a5276;margin-bottom:8px">Baldes cargados</div>
+        <div id="proc-baldes-inputs"></div>
+        <div class="btn-row"><button class="btn" onclick="addBaldeFila()">+ Agregar balde</button></div>
+      </div>
+      <div id="proc-resumen" style="margin-top:12px"></div>
+      <div class="btn-row"><button class="btn primary" onclick="cerrarProceso()">✓ Cerrar proceso → actualizar stock</button></div>
+    </div>
+  </div>
+  <div id="proc-baldes" style="display:none">
+    <div class="card">
+      <div class="card-title"><span class="dot" style="background:#2e7d32"></span>Stock de baldes
+        <span style="margin-left:auto;display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+          <select id="b-orden" onchange="renderBaldes()" style="font-size:12px;padding:4px 8px;width:auto;border:1px solid #cdd5e0;border-radius:4px">
+            <option value="fecha-desc">Fecha ↓</option><option value="fecha-asc">Fecha ↑</option>
+            <option value="mp-asc">MP A→Z</option><option value="num-asc">N° ↑</option>
+          </select>
+          <select id="b-filtro" onchange="renderBaldes()" style="font-size:12px;padding:4px 8px;width:auto;border:1px solid #cdd5e0;border-radius:4px"><option value="">Todos</option></select>
+          <select id="b-est" onchange="renderBaldes()" style="font-size:12px;padding:4px 8px;width:auto;border:1px solid #cdd5e0;border-radius:4px">
+            <option value="">Todos estados</option><option value="lleno">Llenos</option><option value="parcial">Parciales</option><option value="vacio">Vacíos</option>
+          </select>
+          <button class="btn export" onclick="exportarBaldes()">⬇ Excel</button>
+        </span>
+      </div>
+      <table><thead><tr><th>N°</th><th>Insumo</th><th>Tipo</th><th>Fecha</th><th>Peso neto orig.</th><th>Disponible</th><th>Costo/kg</th><th>Estado</th><th>Lotes</th><th></th></tr></thead>
+      <tbody id="baldes-tabla"></tbody></table>
+    </div>
+    <div class="card"><div class="card-title"><span class="dot"></span>Vista rápida</div>
+    <div style="display:flex;flex-wrap:wrap;gap:8px" id="balde-grid"></div></div>
+  </div>
+  <div id="proc-desperdicio" style="display:none">
+    <div class="card"><div class="card-title"><span class="dot" style="background:#b45309"></span>Desperdicio por MP <span style="margin-left:auto"><button class="btn export" onclick="exportarDesperdicio()">⬇ Excel</button></span></div><div id="desp-resumen"></div></div>
+    <div class="card"><div class="card-title"><span class="dot"></span>Historial de procesos</div>
+    <table><thead><tr><th>Fecha</th><th>Insumo</th><th>Tipo</th><th>Bruto</th><th>Neto</th><th>% Desp.</th><th>Costo/kg neto</th></tr></thead><tbody id="desp-tabla"></tbody></table></div>
+  </div>
+</div>
+
+<!-- INSUMOS -->
+<div id="tab-insumos" class="section">
+  <div class="card">
+    <div class="card-title"><span class="dot"></span>Registrar nuevo insumo <span style="font-size:11px;font-weight:400;color:#666;margin-left:6px">— para sumar stock a un insumo existente usá el botón ＋ Stock en la tabla</span></div>
+    <div class="frow">
+      <div class="fg"><label>Nombre</label><input id="ins-nombre" placeholder="ej: Pulpa de frutilla"></div>
+      <div class="fg"><label>Categoría</label>
+        <select id="ins-cat"><option>Fruta / pulpa</option><option>Azúcar</option><option>Envases</option><option>Etiquetas</option><option>Verdura / pulpa</option><option>Leche</option><option>Cuajo / fermento</option><option>Ácidos / conservantes</option><option>Bolsas embalaje</option><option>Lácteos</option><option>Otro</option></select>
+      </div>
+      <div class="fg"><label>Unidad</label><select id="ins-unidad"><option>kg</option><option>g</option><option>litro</option><option>unidad</option><option>caja</option><option>rollo</option></select></div>
+    </div>
+    <div style="margin-top:12px;padding:12px;background:#f4f6f9;border-radius:6px;display:flex;align-items:center;gap:12px">
+      <input type="checkbox" id="ins-proc" style="width:18px;height:18px;cursor:pointer;flex-shrink:0" onchange="toggleProcFields()">
+      <div>
+        <label style="font-weight:600;color:#003087;margin:0;cursor:pointer" for="ins-proc">Requiere procesamiento previo (baldes)</label>
+        <div style="font-size:11px;color:#666;margin-top:2px">Activá si este insumo pasa por Procesamiento MP. El costo y stock se cargan automáticamente al cerrar cada proceso.</div>
+      </div>
+    </div>
+    <div id="ins-costo-stock-row" class="frow" style="margin-top:10px">
+      <div class="fg"><label>Costo unitario ($)</label><input id="ins-costo" type="number" placeholder="0" step="0.1"></div>
+      <div class="fg"><label>Stock inicial</label><input id="ins-stock" type="number" placeholder="0" step="0.1"></div>
+      <div class="fg"><label>Stock mínimo alerta</label><input id="ins-min" type="number" placeholder="0" step="0.1"></div>
+    </div>
+    <div id="ins-proc-aviso" style="display:none;margin-top:10px;padding:10px 14px;background:#e3f2fd;border-left:4px solid #003087;border-radius:0 6px 6px 0;font-size:12px;color:#1a5276">
+      Costo y stock se cargan automáticamente desde Procesamiento MP. Solo completá el mínimo de alerta.
+      <div style="margin-top:8px"><label style="font-size:12px;color:#555;font-weight:500;margin-bottom:4px;display:block">Stock mínimo alerta (kg)</label><input id="ins-min-proc" type="number" placeholder="0" step="0.1" style="width:180px;padding:6px 10px;font-size:13px;border:1px solid #cdd5e0;border-radius:6px"></div>
+    </div>
+    <div class="btn-row"><button class="btn primary" onclick="agregarInsumo()">+ Agregar insumo</button></div>
+  </div>
+  <div class="card">
+    <div class="card-title"><span class="dot"></span>Insumos registrados <span style="margin-left:auto"><button class="btn export" onclick="exportarInsumos()">⬇ Excel</button></span></div>
+    <table><thead><tr><th>Insumo</th><th>Categoría</th><th>Unidad</th><th>Costo actual</th><th>Stock</th><th>Mín.</th><th>Estado</th><th>Proc. previo</th><th>Kardex</th><th>Acciones</th></tr></thead>
+    <tbody id="ins-tabla"></tbody></table>
+  </div>
+</div>
+
+<!-- KARDEX -->
+<div id="tab-kardex" class="section">
+  <div class="card">
+    <div class="card-title"><span class="dot"></span>Kardex — movimientos por insumo</div>
+    <div class="frow" style="margin-bottom:14px">
+      <div class="fg"><label>Insumo</label><select id="kardex-sel" onchange="renderKardex()"><option value="">-- seleccionar --</option></select></div>
+      <span style="padding-bottom:2px"><button class="btn export" onclick="exportarKardexSel()">⬇ Excel</button></span>
+    </div>
+    <div id="kardex-detalle"></div>
+  </div>
+</div>
+
+<!-- FORMULACIONES -->
+<div id="tab-formulaciones" class="section">
+  <div class="card">
+    <div class="card-title"><span class="dot"></span>Nueva formulación</div>
+    <div class="frow">
+      <div class="fg"><label>Nombre del producto</label><input id="rec-nombre" placeholder="ej: Mermelada de frutilla 454g"></div>
+      <div class="fg"><label>Tipo</label><select id="rec-tipo"><option>Mermelada</option><option>Dulce</option><option>Dulce de leche</option><option>Queso</option><option>Conserva</option><option>Otro</option></select></div>
+      <div class="fg"><label>Unidad de producción</label><select id="rec-uprod"><option>frasco 454g</option><option>frasco 600g</option><option>frasco 800g</option><option>botella 330cc</option><option>botella 660cc</option><option>bandeja 500g</option><option>kg</option><option>unidad</option></select></div>
+    </div>
+    <div id="rec-items" style="margin-top:12px"></div>
+    <div class="frow" style="margin-top:10px">
+      <div class="fg"><label>Insumo</label><select id="rec-ins-sel"><option value="">-- seleccionar --</option></select></div>
+      <div class="fg"><label>Cant. teórica por unidad</label><input id="rec-cant" type="number" placeholder="0" step="0.001"></div>
+      <div style="padding-bottom:2px"><button class="btn" onclick="addRecItem()">+ Agregar</button></div>
+    </div>
+    <div class="btn-row"><button class="btn primary" onclick="guardarReceta()">Guardar formulación</button></div>
+  </div>
+  <div class="card"><div class="card-title"><span class="dot"></span>Formulaciones guardadas</div><div id="rec-lista"></div></div>
+</div>
+
+<!-- PRODUCCIÓN -->
+<div id="tab-produccion" class="section">
+  <div class="card">
+    <div class="card-title"><span class="dot"></span>Registrar lote de producción</div>
+    <div class="frow">
+      <div class="fg"><label>Producto (formulación)</label><select id="prod-rec" onchange="cargarLote()"><option value="">-- seleccionar --</option></select></div>
+      <div class="fg"><label>N° lote</label><input id="prod-lote" placeholder="ej: L-2024-001"></div>
+      <div class="fg"><label>Fecha</label><input id="prod-fecha" type="date"></div>
+    </div>
+    <div class="frow" style="margin-top:10px">
+      <div class="fg"><label>MEP a cargo</label><input id="prod-mep"></div>
+      <div class="fg"><label>Producción</label>
+        <select id="prod-tipo" onchange="document.getElementById('prod-curso-div').style.display=this.value==='Con estudiantes'?'block':'none'">
+          <option>Sin estudiantes</option><option>Con estudiantes</option></select>
+      </div>
+      <div class="fg" id="prod-curso-div" style="display:none"><label>Curso</label><input id="prod-curso"></div>
+    </div>
+    <div style="margin-top:14px">
+      <div style="font-size:13px;font-weight:600;color:#1a5276;margin-bottom:6px">Consumos reales del lote</div>
+      <p style="font-size:12px;color:#888;margin-bottom:10px">Insumos con procesamiento previo: seleccioná los baldes usados. La cantidad se precarga con la suma disponible y es editable. Insumos sin procesamiento: la cantidad se trae de la receta (editable).</p>
+      <div id="prod-consumos"></div>
+    </div>
+    <div class="frow" style="margin-top:14px">
+      <div class="fg"><label>Unidades finales obtenidas</label><input id="prod-unidades" type="number" placeholder="0" step="0.1" oninput="calcLote()"></div>
+      <div class="fg"><label>Envase</label><select id="prod-envase"><option>frasco 454g</option><option>frasco 600g</option><option>frasco 800g</option><option>botella 330cc</option><option>botella 660cc</option><option>bandeja 500g</option><option>otro</option></select></div>
+      <div class="fg"><label>Observaciones</label><input id="prod-obs"></div>
+    </div>
+    <div id="prod-preview"></div>
+    <div class="btn-row"><button class="btn primary" onclick="registrarProduccion()">✓ Registrar lote → Almacén Producción</button></div>
+  </div>
+</div>
+
+<!-- STOCK -->
+<div id="tab-stock" class="section">
+  <div class="tab-sub">
+    <button class="tsb active" onclick="stS('prod',this)">Producción</button>
+    <button class="tsb" onclick="stS('dep',this)">Depósito</button>
+    <button class="tsb" onclick="stS('ven',this)">Ventas</button>
+    <button class="tsb" onclick="stS('insumos',this)">Insumos</button>
+    <button class="tsb" onclick="stS('movs',this)">Movimientos</button>
+  </div>
+  <div id="stock-prod">
+    <div class="card"><div class="card-title"><span class="dot" style="background:#1565c0"></span>Almacén Producción <span style="margin-left:auto;display:flex;gap:6px;align-items:center"><button class="btn sm" onclick="mostrarConsejoAuditoria()" style="background:#fff3cd;border-color:#ffc107;color:#856404;font-size:11px">ℹ Auditoría</button><button class="btn export" onclick="expStock('prod')">⬇ Excel</button></span></div>
+    <table><thead><tr><th>Producto</th><th>Tipo</th><th>Lote</th><th>Unidades</th><th>Fecha</th><th>Costo real/u.</th><th>Precio sug.</th><th>Acciones</th></tr></thead><tbody id="st-prod-t"></tbody></table></div>
+    <div class="card"><div class="card-title"><span class="dot" style="background:#1565c0"></span>Mover Producción → Depósito</div>
+    <div class="frow"><div class="fg"><label>Lote</label><select id="mv-lote-dep"><option value="">--</option></select></div><div class="fg"><label>Cantidad</label><input id="mv-cant-dep" type="number" placeholder="0" step="0.1"></div><div style="padding-bottom:2px"><button class="btn success" onclick="mvPD()">Mover →</button></div></div></div>
+  </div>
+  <div id="stock-dep" style="display:none">
+    <div class="card"><div class="card-title"><span class="dot" style="background:#2e7d32"></span>Depósito <span style="margin-left:auto"><button class="btn export" onclick="expStock('dep')">⬇ Excel</button></span></div>
+    <table><thead><tr><th>Producto</th><th>Tipo</th><th>Lote</th><th>Unidades</th><th>Fecha ingreso</th><th>Costo/u.</th></tr></thead><tbody id="st-dep-t"></tbody></table></div>
+    <div class="card"><div class="card-title"><span class="dot" style="background:#2e7d32"></span>Mover Depósito → Ventas</div>
+    <div class="frow"><div class="fg"><label>Lote</label><select id="mv-lote-ven"><option value="">--</option></select></div><div class="fg"><label>Cantidad</label><input id="mv-cant-ven" type="number" placeholder="0" step="0.1"></div><div style="padding-bottom:2px"><button class="btn success" onclick="mvDV()">Mover →</button></div></div></div>
+  </div>
+  <div id="stock-ven" style="display:none">
+    <div class="card"><div class="card-title"><span class="dot" style="background:#e65100"></span>Ventas <span style="margin-left:auto"><button class="btn export" onclick="expStock('ven')">⬇ Excel</button></span></div>
+    <table><thead><tr><th>Producto</th><th>Lote</th><th>Unidades</th><th>Precio sug.</th></tr></thead><tbody id="st-ven-t"></tbody></table></div>
+    <div class="card"><div class="card-title"><span class="dot" style="background:#e65100"></span>Registrar venta</div>
+    <div class="frow"><div class="fg"><label>Lote</label><select id="venta-lote"><option value="">--</option></select></div><div class="fg"><label>Unidades</label><input id="venta-cant" type="number" placeholder="0" step="0.1"></div><div class="fg"><label>Precio/u. ($)</label><input id="venta-precio" type="number" placeholder="0" step="0.1"></div><div style="padding-bottom:2px"><button class="btn danger" onclick="regVenta()">Registrar</button></div></div></div>
+  </div>
+  <div id="stock-insumos" style="display:none">
+    <div class="card"><div class="card-title"><span class="dot"></span>Stock de insumos <span style="font-size:11px;font-weight:400;color:#666;margin-left:6px">— para sumar stock ir a la solapa Insumos → botón ＋ Stock</span></div>
+    <table><thead><tr><th>Insumo</th><th>Unidad</th><th>Stock</th><th>Mínimo</th><th>Estado</th><th>Costo actual</th></tr></thead><tbody id="st-ins-t"></tbody></table></div>
+  </div>
+  <div id="stock-movs" style="display:none">
+    <div class="card"><div class="card-title"><span class="dot"></span>Movimientos <span style="margin-left:auto"><button class="btn export" onclick="exportarMovimientos()">⬇ Excel</button></span></div>
+    <table><thead><tr><th>Fecha</th><th>Tipo</th><th>Producto / insumo</th><th>Lote / ref.</th><th>Cantidad</th></tr></thead><tbody id="st-movs-t"></tbody></table></div>
+  </div>
+</div>
+
+<!-- COSTOS -->
+<div id="tab-costos" class="section">
+  <div class="tab-sub">
+    <button class="tsb active" onclick="stCostos('formulacion',this)">Formulación — costos actuales</button>
+    <button class="tsb" onclick="stCostos('lotes',this)">Detalle de lotes producidos</button>
+  </div>
+  <div id="costos-formulacion">
+    <div class="card"><div class="card-title"><span class="dot"></span>Costo teórico con precios actuales <span style="font-size:11px;font-weight:400;color:#666;margin-left:4px">— simula cuánto costaría producir hoy con los precios vigentes de insumos</span></div>
+    <div class="frow"><div class="fg"><label>Producto</label><select id="costo-sel" onchange="mostrarCostos()"><option value="">-- seleccionar --</option></select></div><span style="padding-bottom:2px"><button class="btn export" onclick="expCostos()">⬇ Excel</button></span></div></div>
+    <div id="costo-detalle"></div>
+  </div>
+  <div id="costos-lotes" style="display:none">
+    <div class="card">
+      <div class="card-title"><span class="dot"></span>Detalle de lotes reales producidos <span style="margin-left:auto;display:flex;gap:8px"><button class="btn export" onclick="expLotesDetalle()">⬇ Excel</button></span></div>
+      <div class="frow" style="margin-bottom:14px">
+        <div class="fg"><label>Filtrar por producto</label><select id="lotes-det-sel" onchange="renderLotesDetalle()"><option value="">Todos</option></select></div>
+      </div>
+      <div id="lotes-detalle-body"></div>
+    </div>
+  </div>
+</div>
+
+<!-- COSTOS FIJOS -->
+<div id="tab-fijos" class="section">
+  <div class="card"><div class="card-title"><span class="dot"></span>Personal</div>
+  <div class="frow"><div class="fg"><label>Salario mensual total ($)</label><input id="fij-salario" type="number" placeholder="0" step="0.1" oninput="saveFijos()"></div><div class="fg"><label>Producción anual estimada (u.)</label><input id="fij-prod-anual" type="number" placeholder="8000" oninput="saveFijos()"></div></div></div>
+  <div class="card"><div class="card-title"><span class="dot"></span>Servicios</div>
+  <div class="grid3"><div><label>Luz mensual ($)</label><input id="fij-luz" type="number" placeholder="0" step="0.1" oninput="saveFijos()"></div><div><label>Gas ($/mes)</label><input id="fij-gas" type="number" placeholder="0" step="0.1" oninput="saveFijos()"></div><div><label>Agua ($/mes)</label><input id="fij-agua" type="number" placeholder="0" step="0.1" oninput="saveFijos()"></div><div><label>Otros ($/mes)</label><input id="fij-otros" type="number" placeholder="0" step="0.1" oninput="saveFijos()"></div></div></div>
+  <div class="card"><div class="card-title"><span class="dot"></span>Amortizaciones</div>
+  <div id="amort-lista"></div>
+  <div class="frow" style="margin-top:12px"><div class="fg"><label>Activo</label><input id="amort-nombre" placeholder="ej: Paila"></div><div class="fg"><label>Valor ($)</label><input id="amort-valor" type="number" placeholder="0" step="0.1"></div><div class="fg"><label>Vida útil (años)</label><input id="amort-vida" type="number" placeholder="10"></div><div style="padding-bottom:2px"><button class="btn" onclick="addAmort()">+ Agregar</button></div></div></div>
+  <div class="card"><div class="card-title"><span class="dot"></span>Comercialización y margen</div>
+  <div class="frow"><div class="fg"><label>Admin. y comercialización (%)</label><input id="fij-admin" type="number" placeholder="0" step="0.1" oninput="saveFijos()"></div><div class="fg"><label>Margen deseado (%)</label><input id="fij-margen" type="number" placeholder="30" step="0.1" oninput="saveFijos()"></div></div>
+  <div id="fijos-resumen" style="margin-top:14px"></div></div>
+</div>
+
+<!-- HISTORIAL -->
+<div id="tab-historial" class="section">
+  <div class="card">
+    <div class="card-title"><span class="dot"></span>Historial de lotes
+      <span style="margin-left:auto;display:flex;gap:8px">
+        <button class="btn export" onclick="expHistorial()">⬇ Excel</button>
+        <button class="btn export" onclick="expPlanilla()">⬇ Planilla producción</button>
+      </span>
+    </div>
+    <div class="frow" style="margin-bottom:14px">
+      <div class="fg"><label>Filtrar por producto</label><select id="hist-sel" onchange="mostrarHistorial()"><option value="">Todos</option></select></div>
+      <div class="fg"><label>Ordenar por</label><select id="hist-orden" onchange="mostrarHistorial()"><option value="fecha-desc">Fecha ↓</option><option value="fecha-asc">Fecha ↑</option><option value="lote-asc">Lote ↑</option><option value="lote-desc">Lote ↓</option></select></div>
+    </div>
+    <table><thead><tr><th>Fecha</th><th>Lote</th><th>Producto</th><th>Unidades</th><th>Costo real/u.</th><th>Costo teórico/u.</th><th>Diferencia</th><th>Precio sug.</th></tr></thead>
+    <tbody id="hist-tabla"></tbody></table>
+  </div>
+</div>
+
+</div><!-- /content -->
+<script>
+const SCRIPT_URL='https://script.google.com/macros/s/AKfycbwtdZE9G9IS6kJ7-A0O8tNSf1PVUGNwk_7luO0DihY2ygyzV6jM27xujIld_uNbczWh/exec';
+
+// ── ESTADO INICIAL LIMPIO ─────────────────────────────────────────────────────
+function estadoLimpio(){
+  return {
+    insumos:[], recetas:[], lotes:[], ventas:[],
+    stock:{prod:[],dep:[],ven:[]},
+    movimientos:[], historial:[], baldes:[], procesosMP:[],
+    kardex:{}, // { insNombre: [{fecha,tipo,entrada,salida,saldo,costo,ref}] }
+    fijos:{salario:0,prodAnual:8000,luz:0,gas:0,agua:0,otros:0,admin:0,margen:30,amortizaciones:[]}
+  };
+}
+let D=estadoLimpio();
+let saving=false;
+
+// ── FORMATO ───────────────────────────────────────────────────────────────────
+function fN(n){const v=parseFloat(n||0);return v%1===0?v.toLocaleString('es-AR'):v.toLocaleString('es-AR',{minimumFractionDigits:1,maximumFractionDigits:1});}
+function fP(n){return'$'+fN(n);}
+function fPct(n){return parseFloat(n||0).toLocaleString('es-AR',{minimumFractionDigits:1,maximumFractionDigits:1})+'%';}
+function hoy(){return new Date().toLocaleDateString('es-AR');}
+
+// ── SYNC ──────────────────────────────────────────────────────────────────────
+async function fetchData(){
+  try{
+    setSS('syncing','Sincronizando...');
+    const r=await fetch(SCRIPT_URL+'?t='+Date.now());if(!r.ok)throw new Error();
+    const txt=await r.text();
+    if(txt&&txt!=='null'){
+      const p=JSON.parse(txt);
+      if(p&&typeof p==='object'){
+        D=p;
+        // garantizar arrays y objetos necesarios
+        ['baldes','procesosMP','ventas','movimientos','historial','lotes','insumos','recetas'].forEach(k=>{if(!Array.isArray(D[k]))D[k]=[];});
+        if(!D.stock||typeof D.stock!=='object')D.stock={prod:[],dep:[],ven:[]};
+        ['prod','dep','ven'].forEach(k=>{if(!Array.isArray(D.stock[k]))D.stock[k]=[];});
+        if(!D.kardex||typeof D.kardex!=='object')D.kardex={};
+        if(!D.fijos||typeof D.fijos!=='object')D.fijos={salario:0,prodAnual:8000,luz:0,gas:0,agua:0,otros:0,admin:0,margen:30,amortizaciones:[]};
+        if(!Array.isArray(D.fijos.amortizaciones))D.fijos.amortizaciones=[];
+      }
+    }
+    setSS('ok','Conectado · datos compartidos');setLS();return true;
+  }catch(e){setSS('error','Error de conexión');return false;}
+}
+async function pushData(){
+  if(saving)return;saving=true;setSS('syncing','Guardando...');
+  try{await fetch(SCRIPT_URL,{method:'POST',body:JSON.stringify(D),headers:{'Content-Type':'text/plain'}});setSS('ok','Conectado · datos compartidos');setLS();}
+  catch(e){setSS('error','No se pudo guardar — reintentando...');setTimeout(pushData,3000);}
+  finally{saving=false;}
+}
+function setSS(s,m){document.getElementById('sync-dot').className='sync-dot'+(s==='syncing'?' syncing':s==='error'?' error':'');document.getElementById('sync-status').textContent=m;}
+function setLS(){document.getElementById('last-sync').textContent='Sync: '+new Date().toLocaleTimeString('es-AR',{hour:'2-digit',minute:'2-digit'});}
+function save(){pushData();}
+async function syncNow(){await fetchData();renderAll();}
+function toast(msg){const t=document.getElementById('toast');t.textContent=msg;t.style.display='block';setTimeout(()=>t.style.display='none',2800);}
+function cm(id){document.getElementById(id).classList.remove('open');}
+
+// ── NAVEGACIÓN ────────────────────────────────────────────────────────────────
+function goTab(id,btn){
+  document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));
+  document.getElementById('tab-'+id).classList.add('active');btn.classList.add('active');
+  ({dashboard:renderDashboard,procesamiento:renderProcesamiento,insumos:renderInsumos,kardex:renderKardexTab,formulaciones:renderRecetas,produccion:()=>{updSelRec();updSelIns();},stock:renderStock,costos:renderCostos,fijos:renderFijos,historial:renderHistorial})[id]?.();
+}
+function stS(id,btn){
+  ['prod','dep','ven','insumos','movs'].forEach(s=>{const el=document.getElementById('stock-'+s);if(el)el.style.display='none';});
+  document.querySelectorAll('#tab-stock .tsb').forEach(b=>b.classList.remove('active'));
+  document.getElementById('stock-'+id).style.display='block';btn.classList.add('active');renderStock();
+}
+function stP(id,btn){
+  ['nuevo','baldes','desperdicio'].forEach(s=>{const el=document.getElementById('proc-'+s);if(el)el.style.display='none';});
+  document.querySelectorAll('#tab-procesamiento .tsb').forEach(b=>b.classList.remove('active'));
+  document.getElementById('proc-'+id).style.display='block';btn.classList.add('active');
+  if(id==='baldes')renderBaldes();
+  if(id==='desperdicio')renderDesperdicio();
+}
+
+// ── KARDEX: registrar movimiento ──────────────────────────────────────────────
+// tipo: 'Ingreso MP' | 'Procesamiento MP' | 'Consumo producción' | 'Ajuste manual'
+function regKardex(insNombre, tipo, entrada, salida, saldoNuevo, costo, ref){
+  if(!D.kardex)D.kardex={};
+  if(!D.kardex[insNombre])D.kardex[insNombre]=[];
+  D.kardex[insNombre].push({fecha:hoy(),tipo,entrada:entrada||0,salida:salida||0,saldo:parseFloat(saldoNuevo.toFixed(1)),costo:parseFloat(costo||0),ref:ref||''});
+}
+
+// ── UTILIDAD: costo actual de un insumo por índice ────────────────────────────
+function costoIns(idx){return parseFloat((D.insumos[idx]||{}).costo||0);}
+function getCFU(){const f=D.fijos;const sA=(parseFloat(f.salario)||0)*12;const sM=(parseFloat(f.luz)||0)+(parseFloat(f.gas)||0)+(parseFloat(f.agua)||0)+(parseFloat(f.otros)||0);const amA=(f.amortizaciones||[]).reduce((s,a)=>(parseFloat(a.valor)||0)/(parseFloat(a.vida)||10)+s,0);return(parseFloat(f.prodAnual)||8000)>0?(sA+sM*12+amA)/(parseFloat(f.prodAnual)||8000):0;}
+function calcTeorico(rec){return(rec?.items||[]).reduce((s,r)=>{const ins=D.insumos[r.insIdx];return s+(ins?r.cant*(parseFloat(ins.costo)||0):0);},0);}
+
+function renderAll(){renderDashboard();renderInsumos();renderRecetas();renderFijos();updSelRec();updSelIns();renderKardexTab();}
+
+// ── DASHBOARD ─────────────────────────────────────────────────────────────────
+function renderDashboard(){
+  const ts=(D.stock.prod||[]).reduce((s,i)=>s+(i.u||0),0)+(D.stock.dep||[]).reduce((s,i)=>s+(i.u||0),0)+(D.stock.ven||[]).reduce((s,i)=>s+(i.u||0),0);
+  const al=D.insumos.filter(i=>parseFloat(i.stock)<=parseFloat(i.min));
+  const ba=(D.baldes||[]).filter(b=>b.estado!=='vacio').length;
+  document.getElementById('dash-metrics').innerHTML=`<div class="metric"><div class="val">${D.lotes.length}</div><div class="lbl">Lotes producidos</div></div><div class="metric green"><div class="val">${fN(ts)}</div><div class="lbl">Unidades en stock</div></div><div class="metric amber"><div class="val">${al.length}</div><div class="lbl">Alertas stock bajo</div></div><div class="metric"><div class="val">${ba}</div><div class="lbl">Baldes activos</div></div>`;
+  const ul=[...D.lotes].sort((a,b)=>new Date(b.fecha)-new Date(a.fecha)).slice(0,5);
+  document.getElementById('dash-lotes').innerHTML=ul.length?ul.map(l=>`<div class="hrow"><span><b>${l.recNombre}</b> — ${l.lote}</span><span style="color:#666">${l.fecha} · ${fN(l.u)} u.</span></div>`).join(''):'<div class="empty">Sin lotes</div>';
+  document.getElementById('dash-alertas').innerHTML=al.length?al.map(i=>`<div class="hrow"><span>${i.nombre}</span><span class="badge critico">Stock: ${fN(i.stock)} ${i.unidad}</span></div>`).join(''):'<div class="empty" style="color:#2e7d32">Sin alertas</div>';
+  const bd=(D.baldes||[]).filter(b=>b.estado!=='vacio').slice(0,8);
+  document.getElementById('dash-baldes').innerHTML=bd.length?`<div style="display:flex;flex-wrap:wrap;gap:8px">${bd.map(b=>`<div style="border:2px solid ${b.estado==='lleno'?'#2e7d32':'#e65100'};background:${b.estado==='lleno'?'#e8f5e9':'#fff3e0'};border-radius:8px;padding:10px;text-align:center;cursor:pointer;min-width:100px" onclick="verBalde('${b.id}')"><div style="font-size:18px;font-weight:700;color:#003087">${b.numero}</div><div style="font-size:11px;font-weight:600">${b.insNombre}</div><div style="font-size:11px">${fN(b.disp)} kg</div></div>`).join('')}</div>`:'<div class="empty">Sin baldes activos</div>';
+  document.getElementById('dash-movs').innerHTML=[...D.movimientos].reverse().slice(0,5).map(m=>`<div class="mc"><span style="color:#003087;font-weight:600">${m.tipo}</span><span>${m.producto}</span><span style="color:#999;font-size:11px">${m.fecha}</span></div>`).join('')||'<div class="empty">Sin movimientos</div>';
+}
+
+// ── PROCESAMIENTO MP ──────────────────────────────────────────────────────────
+let baldeFils=[];
+function updProcInsSel(){
+  const sel=document.getElementById('proc-ins-sel');if(!sel)return;
+  const cur=sel.value;
+  // Solo insumos con proc=true
+  sel.innerHTML='<option value="">-- seleccionar --</option>'+D.insumos.map((i,idx)=>i.proc?`<option value="${idx}">${i.nombre} (${i.unidad})</option>`:'').join('');
+  sel.value=cur;
+}
+function renderProcesamiento(){
+  document.getElementById('proc-fecha').value=new Date().toISOString().split('T')[0];
+  baldeFils=[];document.getElementById('proc-baldes-inputs').innerHTML='';document.getElementById('proc-resumen').innerHTML='';
+  updProcInsSel();addBaldeFila();
+}
+function addBaldeFila(){
+  const cont=document.getElementById('proc-baldes-inputs');const idx=baldeFils.length;baldeFils.push({num:0,peso:0});
+  const row=document.createElement('div');row.id='bf-'+idx;row.style.cssText='display:flex;gap:10px;align-items:flex-end;margin-bottom:8px';
+  row.innerHTML=`<div class="fg" style="flex:1;min-width:90px"><label>N° Balde (1-50)</label><input type="number" min="1" max="50" placeholder="12" oninput="baldeFils[${idx}].num=parseInt(this.value)||0;calcProc()"></div><div class="fg" style="flex:2;min-width:120px"><label>Peso neto (kg)</label><input type="number" step="0.1" placeholder="0" oninput="baldeFils[${idx}].peso=parseFloat(this.value)||0;calcProc()"></div><div style="padding-bottom:2px"><button class="btn sm danger" onclick="document.getElementById('bf-${idx}').remove();baldeFils[${idx}]=null;calcProc()">✕</button></div>`;
+  cont.appendChild(row);
+}
+function calcProc(){
+  const bruto=parseFloat(document.getElementById('proc-bruto').value)||0;
+  const filas=baldeFils.filter(b=>b&&b.num&&b.peso>0);
+  const neto=filas.reduce((s,b)=>s+b.peso,0);
+  const desp=bruto>0?((bruto-neto)/bruto*100):0;
+  const costKg=parseFloat(document.getElementById('proc-costo-kg').value)||0;
+  const costNeto=neto>0&&costKg>0?bruto*costKg/neto:0;
+  if(!bruto){document.getElementById('proc-resumen').innerHTML='';return;}
+  const cl=desp<10?'bajo':desp<20?'medio':'alto';
+  document.getElementById('proc-resumen').innerHTML=`<div class="cb"><div class="cr"><span>Peso bruto</span><span>${fN(bruto)} kg</span></div><div class="cr"><span>Peso neto (${filas.length} baldes)</span><span>${fN(neto)} kg</span></div><div class="cr total"><span>% Desperdicio</span><span><span class="di ${cl}">${fPct(desp)}</span></span></div>${costKg?`<div class="cr"><span>Costo/kg neto</span><span>${fP(costNeto)}</span></div>`:''}</div>`;
+}
+function cerrarProceso(){
+  const insIdxStr=document.getElementById('proc-ins-sel').value;
+  if(insIdxStr===''){toast('Seleccioná el insumo de destino');return;}
+  const insIdx=parseInt(insIdxStr);const ins=D.insumos[insIdx];
+  const bruto=parseFloat(document.getElementById('proc-bruto').value)||0;if(!bruto){toast('Ingresá peso bruto');return;}
+  const fecha=document.getElementById('proc-fecha').value||hoy();
+  const tipo=document.getElementById('proc-tipo').value;
+  const proveedor=document.getElementById('proc-proveedor').value;
+  const costKg=parseFloat(document.getElementById('proc-costo-kg').value)||0;
+  const filas=baldeFils.filter(b=>b&&b.num&&b.peso>0);if(!filas.length){toast('Ingresá al menos un balde');return;}
+  const neto=parseFloat(filas.reduce((s,b)=>s+b.peso,0).toFixed(1));
+  const desp=bruto>0?((bruto-neto)/bruto*100):0;
+  const costNeto=neto>0&&costKg>0?parseFloat((bruto*costKg/neto).toFixed(2)):0;
+  // BALDES ÚNICOS: cada número de balde (1-50) existe una sola vez.
+  // Solo se puede reusar si su disp === 0 (vacío).
+  for(const f of filas){
+    const existente=(D.baldes||[]).find(b=>b.numero===f.num);
+    if(existente&&existente.estado!=='vacio'){
+      toast(`Balde ${f.num} aún tiene ${fN(existente.disp)} kg de ${existente.insNombre}. Vaciarlo antes de reusar.`);return;
+    }
+  }
+  D.baldes=D.baldes||[];
+  filas.forEach(f=>{
+    const idx=D.baldes.findIndex(b=>b.numero===f.num);
+    const nuevo={id:idx>=0?D.baldes[idx].id:(Date.now()+Math.random()),numero:f.num,insNombre:ins.nombre,
+      tipo,fecha,pesoNeto:f.peso,disp:f.peso,estado:'lleno',proveedor,costNeto,lotes:[]};
+    if(idx>=0)D.baldes[idx]=nuevo; // reemplaza el balde vacío existente
+    else D.baldes.push(nuevo);     // primera vez que se usa este número
+  });
+  D.procesosMP=D.procesosMP||[];
+  D.procesosMP.push({fecha,insNombre:ins.nombre,tipo,bruto,neto,desp,costKg,costNeto,proveedor,baldes:filas.map(f=>f.num)});
+  // actualizar stock del insumo
+  const stockAnterior=parseFloat(ins.stock||0);
+  ins.stock=parseFloat((stockAnterior+neto).toFixed(1));
+  // actualizar costo del insumo si hay costo nuevo
+  if(costNeto&&costNeto!==parseFloat(ins.costo)){
+    if(!ins.histPrecios)ins.histPrecios=[];
+    ins.histPrecios.push({fecha,costo:parseFloat(ins.costo),motivo:'proceso MP'});
+    ins.costo=costNeto;
+  }
+  // kardex entrada
+  regKardex(ins.nombre,'Procesamiento MP',neto,0,ins.stock,ins.costo,`Proc. ${filas.map(f=>'B'+f.num).join('/')}`);
+  D.movimientos.push({tipo:'Procesamiento MP',producto:ins.nombre,lote:'—',cantidad:neto,fecha:hoy()});
+  save();toast(`${fN(neto)} kg procesados → stock "${ins.nombre}" actualizado`);
+  baldeFils=[];document.getElementById('proc-baldes-inputs').innerHTML='';document.getElementById('proc-resumen').innerHTML='';
+  ['proc-bruto','proc-costo-kg','proc-proveedor'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('proc-ins-sel').value='';addBaldeFila();
+}
+function renderBaldes(){
+  const orden=document.getElementById('b-orden')?.value||'num-asc';
+  const filtroMP=document.getElementById('b-filtro')?.value||'';
+  const filtroEst=document.getElementById('b-est')?.value||'';
+  const vars=[...new Set((D.baldes||[]).map(b=>b.insNombre||''))];
+  const sf=document.getElementById('b-filtro');
+  if(sf){const cv=sf.value;sf.innerHTML='<option value="">Todos</option>'+vars.map(v=>`<option value="${v}">${v}</option>`).join('');sf.value=cv;}
+  let bs=[...(D.baldes||[])];
+  if(filtroMP)bs=bs.filter(b=>b.insNombre===filtroMP);
+  if(filtroEst)bs=bs.filter(b=>b.estado===filtroEst);
+  bs.sort((a,b)=>orden==='fecha-desc'?new Date(b.fecha)-new Date(a.fecha):orden==='fecha-asc'?new Date(a.fecha)-new Date(b.fecha):orden==='mp-asc'?(a.insNombre||'').localeCompare(b.insNombre||''):a.numero-b.numero);
+  document.getElementById('baldes-tabla').innerHTML=bs.length?bs.map(b=>`<tr><td><b>${b.numero}</b></td><td>${b.insNombre||'—'}</td><td>${b.tipo}</td><td>${b.fecha}</td><td>${fN(b.pesoNeto)} kg</td><td><b>${fN(b.disp)} kg</b></td><td>${fP(b.costNeto||0)}</td><td><span class="badge ${b.estado}">${b.estado==='lleno'?'Lleno':b.estado==='parcial'?'Parcial':'Vacío'}</span></td><td style="font-size:11px;color:#666">${(b.lotes||[]).join(', ')||'—'}</td><td><button class="btn sm warning" onclick="editarBalde('${b.id}')">Editar</button></td></tr>`).join(''):'<tr><td colspan="10" class="empty">Sin baldes</td></tr>';
+  document.getElementById('balde-grid').innerHTML=(D.baldes||[]).filter(b=>b.estado!=='vacio').map(b=>`<div style="border:2px solid ${b.estado==='lleno'?'#2e7d32':'#e65100'};background:${b.estado==='lleno'?'#e8f5e9':'#fff3e0'};border-radius:8px;padding:10px;text-align:center;cursor:pointer;min-width:100px" onclick="verBalde('${b.id}')"><div style="font-size:18px;font-weight:700;color:#003087">${b.numero}</div><div style="font-size:11px;font-weight:600">${b.insNombre}</div><div style="font-size:11px">${fN(b.disp)} kg</div><div style="font-size:10px;color:#888">${b.fecha}</div></div>`).join('')||'<div class="empty">Sin baldes activos</div>';
+}
+function editarBalde(id){
+  const b=(D.baldes||[]).find(x=>String(x.id)===String(id));if(!b)return;
+  const nP=prompt(`Balde ${b.numero} (${b.insNombre})\nPeso disponible actual: ${fN(b.disp)} kg\nNuevo peso disponible (kg):`,b.disp);
+  if(nP===null)return;const np=parseFloat(nP);if(isNaN(np)||np<0){toast('Valor inválido');return;}
+  const diff=parseFloat((np-b.disp).toFixed(1));
+  b.disp=parseFloat(np.toFixed(1));
+  b.estado=b.disp<=0?'vacio':b.disp<b.pesoNeto?'parcial':'lleno';
+  // ajustar stock del insumo correspondiente por la diferencia
+  const ins=D.insumos.find(i=>i.nombre===b.insNombre);
+  if(ins&&diff!==0){
+    ins.stock=parseFloat(Math.max(0,parseFloat(ins.stock)+diff).toFixed(1));
+    regKardex(ins.nombre,'Ajuste manual balde',diff>0?diff:0,diff<0?Math.abs(diff):0,ins.stock,ins.costo,`Ajuste balde ${b.numero}`);
+  }
+  const nC=prompt(`Costo/kg neto actual: ${fP(b.costNeto||0)}\nNuevo costo/kg (Enter para mantener):`,b.costNeto||0);
+  if(nC!==null&&!isNaN(parseFloat(nC)))b.costNeto=parseFloat(parseFloat(nC).toFixed(2));
+  save();renderBaldes();toast(`Balde ${b.numero} actualizado`);
+}
+function verBalde(id){
+  const b=(D.baldes||[]).find(x=>String(x.id)===String(id));if(!b)return;
+  document.getElementById('mbt').textContent=`Balde ${b.numero} — ${b.insNombre}`;
+  document.getElementById('mbb').innerHTML=`<div class="cb"><div class="cr"><span>Insumo</span><span>${b.insNombre}</span></div><div class="cr"><span>Tipo MP</span><span>${b.tipo}</span></div><div class="cr"><span>Fecha</span><span>${b.fecha}</span></div><div class="cr"><span>Peso neto original</span><span>${fN(b.pesoNeto)} kg</span></div><div class="cr total"><span>Disponible</span><span>${fN(b.disp)} kg</span></div><div class="cr"><span>Costo/kg neto</span><span>${fP(b.costNeto||0)}</span></div>${b.proveedor?`<div class="cr"><span>Proveedor</span><span>${b.proveedor}</span></div>`:''}<div class="cr"><span>Lotes asociados</span><span>${(b.lotes||[]).join(', ')||'—'}</span></div></div>`;
+  document.getElementById('modal-balde').classList.add('open');
+}
+function renderDesperdicio(){
+  const procs=D.procesosMP||[];
+  const byV={};procs.forEach(p=>{const k=p.insNombre||'';if(!byV[k])byV[k]=[];byV[k].push(p.desp);});
+  document.getElementById('desp-resumen').innerHTML=Object.keys(byV).length?`<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:12px;margin-bottom:16px">${Object.entries(byV).map(([v,ds])=>{const avg=ds.reduce((s,x)=>s+x,0)/ds.length;const cl=avg<10?'bajo':avg<20?'medio':'alto';return`<div class="metric"><div class="val"><span class="di ${cl}">${fPct(avg)}</span></div><div class="lbl">${v} · ${ds.length} proc.</div></div>`;}).join('')}</div>`:'<div class="empty">Sin procesos</div>';
+  document.getElementById('desp-tabla').innerHTML=procs.length?[...procs].reverse().map(p=>{const cl=p.desp<10?'bajo':p.desp<20?'medio':'alto';return`<tr><td>${p.fecha}</td><td>${p.insNombre||'—'}</td><td>${p.tipo}</td><td>${fN(p.bruto)} kg</td><td>${fN(p.neto)} kg</td><td><span class="di ${cl}">${fPct(p.desp)}</span></td><td>${fP(p.costNeto||0)}</td></tr>`;}).join(''):'<tr><td colspan="7" class="empty">Sin procesos</td></tr>';
+}
+
+// ── INSUMOS ───────────────────────────────────────────────────────────────────
+function renderInsumos(){
+  document.getElementById('ins-tabla').innerHTML=D.insumos.length?D.insumos.map((i,idx)=>{
+    const est=parseFloat(i.stock)<=0?'<span class="badge critico">Crítico</span>':parseFloat(i.stock)<=parseFloat(i.min)?'<span class="badge bajo">Bajo</span>':'<span class="badge ok">OK</span>';
+    const procTag=i.proc?'<span class="proc-tag">Con baldes</span>':'';
+    return`<tr>
+      <td><b>${i.nombre}</b>${procTag}</td><td>${i.cat}</td><td>${i.unidad}</td>
+      <td><b>${fP(i.costo)}</b></td><td>${fN(i.stock)}</td><td>${fN(i.min)}</td><td>${est}</td>
+      <td style="text-align:center">${i.proc?'✓':'—'}</td>
+      <td><button class="btn sm info" onclick="abrirKardex('${i.nombre.replace(/'/g,"\\'")}')">Kardex</button></td>
+      <td style="display:flex;gap:4px;flex-wrap:wrap">
+        <button class="btn sm success" onclick="agregarStockIns(${idx})" title="Sumar stock">＋ Stock</button>
+        <button class="btn sm warning" onclick="editarIns(${idx})">Editar</button>
+        <button class="btn sm danger" onclick="eliminarIns(${idx})">✕</button>
+      </td>
+    </tr>`;
+  }).join(''):'<tr><td colspan="10" class="empty">Sin insumos</td></tr>';
+  updSelIns();updProcInsSel();updKardexSel();
+}
+
+// Sumar stock directamente desde la tabla de insumos
+function agregarStockIns(idx){
+  const i=D.insumos[idx];
+  if(i.proc){
+    toast(`"${i.nombre}" requiere procesamiento previo → usá la solapa Procesamiento MP`);return;
+  }
+  const cStr=prompt(`Cantidad a sumar al stock de "${i.nombre}" (stock actual: ${fN(i.stock)} ${i.unidad}):`, '');
+  if(cStr===null)return;
+  const c=parseFloat(cStr);if(isNaN(c)||c<=0){toast('Ingresá una cantidad mayor a 0');return;}
+  const ncStr=prompt(`Costo unitario actual: ${fP(i.costo)}\nNuevo costo/u. (Enter para mantener el actual):`, i.costo);
+  if(ncStr!==null&&ncStr.trim()!==''&&!isNaN(parseFloat(ncStr))){
+    const nc=parseFloat(ncStr);
+    if(nc!==parseFloat(i.costo)){
+      if(!i.histPrecios)i.histPrecios=[];
+      i.histPrecios.push({fecha:hoy(),costo:parseFloat(i.costo),motivo:'actualización por ingreso'});
+      i.costo=nc;
+    }
+  }
+  i.stock=parseFloat((parseFloat(i.stock)+c).toFixed(1));
+  regKardex(i.nombre,'Ingreso MP',c,0,i.stock,i.costo,'Ingreso manual');
+  D.movimientos.push({tipo:'Ingreso MP',producto:i.nombre,lote:'—',cantidad:c,fecha:hoy()});
+  save();renderInsumos();toast(`＋ ${fN(c)} ${i.unidad} sumados al stock de "${i.nombre}"`);
+function toggleProcFields(){
+  const proc=document.getElementById('ins-proc').checked;
+  document.getElementById('ins-costo-stock-row').style.display=proc?'none':'flex';
+  document.getElementById('ins-proc-aviso').style.display=proc?'block':'none';
+  if(proc){document.getElementById('ins-costo').value='';document.getElementById('ins-stock').value='';}
+}
+}
+
+function agregarInsumo(){
+  const n=document.getElementById('ins-nombre').value.trim();if(!n){toast('Ingresá el nombre');return;}
+  // validar nombre duplicado
+  if(D.insumos.find(i=>i.nombre.toLowerCase()===n.toLowerCase())){
+    toast(`Ya existe un insumo llamado "${n}". Usá el botón ＋ Stock para sumar cantidad.`);return;
+  }
+  const proc=document.getElementById('ins-proc').checked;
+  const costo=proc?0:(parseFloat(document.getElementById('ins-costo').value)||0);
+  const stockI=proc?0:(parseFloat(document.getElementById('ins-stock').value)||0);
+  const minVal=proc?(parseFloat(document.getElementById('ins-min-proc').value)||0):(parseFloat(document.getElementById('ins-min').value)||0);
+  const ins={nombre:n,cat:document.getElementById('ins-cat').value,unidad:document.getElementById('ins-unidad').value,costo,stock:stockI,min:minVal,proc,histPrecios:proc?[]:[{fecha:hoy(),costo,motivo:'precio inicial'}]};
+  D.insumos.push(ins);
+  if(stockI>0)regKardex(n,'Saldo inicial',stockI,0,stockI,costo,'Alta de insumo');
+  save();renderInsumos();['ins-nombre','ins-costo','ins-stock','ins-min','ins-min-proc'].forEach(id=>document.getElementById(id).value='');document.getElementById('ins-proc').checked=false;toggleProcFields();toast('Insumo agregado');
+}
+function editarIns(idx){
+  const i=D.insumos[idx];
+  const nC=prompt(`Nuevo costo unitario para "${i.nombre}" (actual: ${fP(i.costo)}):`,i.costo);if(nC===null)return;
+  const nc=parseFloat(nC);if(isNaN(nc)){toast('Valor inválido');return;}
+  if(!i.histPrecios)i.histPrecios=[];if(parseFloat(i.costo)!==nc)i.histPrecios.push({fecha:hoy(),costo:parseFloat(i.costo),motivo:'actualización manual'});
+  i.costo=nc;
+  const nN=prompt(`Nombre:`,i.nombre);if(nN&&nN.trim())i.nombre=nN.trim();
+  const nS=prompt(`Stock actual:`,i.stock);if(nS!==null&&!isNaN(parseFloat(nS))){
+    const nuevo=parseFloat(nS);const diff=parseFloat((nuevo-parseFloat(i.stock)).toFixed(1));
+    if(diff!==0)regKardex(i.nombre,'Ajuste manual',diff>0?diff:0,diff<0?Math.abs(diff):0,nuevo,i.costo,'Edición manual');
+    i.stock=nuevo;
+  }
+  const nP=confirm(`¿Requiere procesamiento previo (baldes)?`);i.proc=nP;
+  save();renderInsumos();toast('Insumo actualizado');
+}
+function eliminarIns(idx){if(confirm('¿Eliminar?')){D.insumos.splice(idx,1);save();renderInsumos();}}
+function updSelIns(){
+  const opts=D.insumos.map((i,idx)=>`<option value="${idx}">${i.nombre} (${i.unidad}) — ${fP(i.costo)}</option>`).join('');
+  ['rec-ins-sel','mp-ins'].forEach(id=>{const el=document.getElementById(id);if(el){const p=el.value;el.innerHTML='<option value="">-- seleccionar --</option>'+opts;el.value=p;}});
+}
+function ingresarMP(){
+  const idx=document.getElementById('mp-ins').value;const c=parseFloat(document.getElementById('mp-cant').value)||0;
+  if(idx===''||!c||c<=0){toast('Seleccioná insumo y una cantidad mayor a 0');return;}
+  const ins=D.insumos[idx];
+  if(ins.proc){toast(`"${ins.nombre}" requiere procesamiento previo. Usá la solapa Procesamiento MP.`);return;}
+  const nc=parseFloat(document.getElementById('mp-costo').value);
+  if(nc&&nc!==parseFloat(ins.costo)){if(!ins.histPrecios)ins.histPrecios=[];ins.histPrecios.push({fecha:hoy(),costo:parseFloat(ins.costo),motivo:'ingreso MP'});ins.costo=nc;}
+  ins.stock=parseFloat((parseFloat(ins.stock)+c).toFixed(1));
+  regKardex(ins.nombre,'Ingreso MP',c,0,ins.stock,ins.costo,'Ingreso manual');
+  D.movimientos.push({tipo:'Ingreso MP',producto:ins.nombre,lote:'—',cantidad:c,fecha:hoy()});
+  save();renderStock();['mp-cant','mp-costo'].forEach(id=>document.getElementById(id).value='');toast('Ingreso registrado');
+}
+
+// ── KARDEX ────────────────────────────────────────────────────────────────────
+let kardexModalIns='';
+function updKardexSel(){
+  const sel=document.getElementById('kardex-sel');if(!sel)return;
+  const cur=sel.value;
+  sel.innerHTML='<option value="">-- seleccionar --</option>'+D.insumos.map(i=>`<option value="${i.nombre}">${i.nombre}</option>`).join('');
+  sel.value=cur;
+}
+function renderKardexTab(){updKardexSel();renderKardex();}
+function renderKardex(){
+  const ins=document.getElementById('kardex-sel').value;
+  const el=document.getElementById('kardex-detalle');
+  if(!ins){el.innerHTML='<div class="empty">Seleccioná un insumo para ver su kardex</div>';return;}
+  const movs=(D.kardex||{})[ins]||[];
+  el.innerHTML=movs.length?`<table><thead><tr><th>Fecha</th><th>Tipo</th><th>Entrada</th><th>Salida</th><th>Saldo</th><th>Costo/u.</th><th>Referencia</th></tr></thead><tbody>${movs.map(m=>`<tr><td>${m.fecha}</td><td>${m.tipo}</td><td style="color:#2e7d32;font-weight:${m.entrada>0?'600':'400'}">${m.entrada>0?'+'+fN(m.entrada):'—'}</td><td style="color:#b91c1c;font-weight:${m.salida>0?'600':'400'}">${m.salida>0?'-'+fN(m.salida):'—'}</td><td><b>${fN(m.saldo)}</b></td><td>${fP(m.costo)}</td><td style="font-size:11px;color:#666">${m.ref||'—'}</td></tr>`).join('')}</tbody></table>`:'<div class="empty">Sin movimientos registrados para este insumo</div>';
+}
+function abrirKardex(insNombre){
+  kardexModalIns=insNombre;
+  document.getElementById('mkt').textContent=`Kardex — ${insNombre}`;
+  const movs=(D.kardex||{})[insNombre]||[];
+  document.getElementById('mkb').innerHTML=movs.length?`<table><thead><tr><th>Fecha</th><th>Tipo</th><th>Entrada</th><th>Salida</th><th>Saldo</th><th>Costo/u.</th><th>Ref.</th></tr></thead><tbody>${movs.map(m=>`<tr><td>${m.fecha}</td><td>${m.tipo}</td><td style="color:#2e7d32;font-weight:${m.entrada>0?'600':'400'}">${m.entrada>0?'+'+fN(m.entrada):'—'}</td><td style="color:#b91c1c;font-weight:${m.salida>0?'600':'400'}">${m.salida>0?'-'+fN(m.salida):'—'}</td><td><b>${fN(m.saldo)}</b></td><td>${fP(m.costo)}</td><td style="font-size:11px;color:#666">${m.ref||'—'}</td></tr>`).join('')}</tbody></table>`:'<div class="empty">Sin movimientos</div>';
+  document.getElementById('modal-kardex').classList.add('open');
+}
+function exportarKardexModal(){if(kardexModalIns)expKardex(kardexModalIns);}
+function exportarKardexSel(){const ins=document.getElementById('kardex-sel').value;if(ins)expKardex(ins);else toast('Seleccioná un insumo');}
+function expKardex(insNombre){
+  const rows=[['Kardex: '+insNombre,'','','','','',''],['Fecha','Tipo','Entrada','Salida','Saldo','Costo/u.','Referencia']];
+  ((D.kardex||{})[insNombre]||[]).forEach(m=>rows.push([m.fecha,m.tipo,m.entrada||0,m.salida||0,m.saldo,m.costo||0,m.ref||'']));
+  csvXls(rows,'kardex_'+insNombre.replace(/\s/g,'_'));
+}
+
+// ── FORMULACIONES ─────────────────────────────────────────────────────────────
+let rIT=[],editIdx=-1,editItems=[];
+function renderRecItems(){document.getElementById('rec-items').innerHTML=rIT.length?`<table><thead><tr><th>Insumo</th><th>Cant./u.</th><th>Unidad</th><th></th></tr></thead><tbody>`+rIT.map((r,i)=>`<tr><td>${r.nombre}${r.proc?'<span class="proc-tag">Baldes</span>':''}</td><td>${fN(r.cant)}</td><td>${r.unidad}</td><td><button class="btn sm" onclick="rIT.splice(${i},1);renderRecItems()">✕</button></td></tr>`).join('')+'</tbody></table>':'';}
+function addRecItem(){
+  const idx=document.getElementById('rec-ins-sel').value;if(idx===''){toast('Seleccioná insumo');return;}
+  const ins=D.insumos[idx];const cant=parseFloat(document.getElementById('rec-cant').value)||0;if(!cant){toast('Ingresá cantidad');return;}
+  rIT.push({insIdx:parseInt(idx),nombre:ins.nombre,cant,unidad:ins.unidad,proc:!!ins.proc});
+  document.getElementById('rec-cant').value='';renderRecItems();
+}
+function guardarReceta(){
+  const n=document.getElementById('rec-nombre').value.trim();if(!n){toast('Ingresá nombre');return;}if(!rIT.length){toast('Agregá al menos un insumo');return;}
+  D.recetas.push({nombre:n,tipo:document.getElementById('rec-tipo').value,uprod:document.getElementById('rec-uprod').value,items:[...rIT]});
+  save();rIT=[];renderRecItems();renderRecetas();document.getElementById('rec-nombre').value='';toast('Formulación guardada');
+}
+function editarFormulacion(idx){
+  editIdx=idx;const rec=D.recetas[idx];editItems=[...rec.items.map(i=>({...i}))];
+  document.getElementById('mfb').innerHTML=`
+    <div class="frow" style="margin-bottom:12px">
+      <div class="fg"><label>Nombre</label><input id="e-nombre" value="${rec.nombre}"></div>
+      <div class="fg"><label>Tipo</label><select id="e-tipo">${['Mermelada','Dulce','Dulce de leche','Queso','Conserva','Otro'].map(t=>`<option${t===rec.tipo?' selected':''}>${t}</option>`).join('')}</select></div>
+      <div class="fg"><label>Unidad</label><select id="e-uprod">${['frasco 454g','frasco 600g','frasco 800g','botella 330cc','botella 660cc','bandeja 500g','kg','unidad'].map(u=>`<option${u===rec.uprod?' selected':''}>${u}</option>`).join('')}</select></div>
+    </div>
+    <div id="e-items" style="margin-bottom:10px"></div>
+    <div class="frow">
+      <div class="fg"><label>Agregar insumo</label><select id="e-ins"><option value="">--</option>${D.insumos.map((i,j)=>`<option value="${j}">${i.nombre} (${i.unidad})</option>`).join('')}</select></div>
+      <div class="fg"><label>Cant./u.</label><input id="e-cant" type="number" placeholder="0" step="0.001"></div>
+      <div style="padding-bottom:2px"><button class="btn sm" onclick="addEditItem()">+ Agregar</button></div>
+    </div>`;
+  renderEI();document.getElementById('modal-form').classList.add('open');
+}
+function renderEI(){document.getElementById('e-items').innerHTML=editItems.length?`<table><thead><tr><th>Insumo</th><th>Cant./u.</th><th>Unidad</th><th></th></tr></thead><tbody>`+editItems.map((r,i)=>`<tr><td>${r.nombre}${r.proc?'<span class="proc-tag">Baldes</span>':''}</td><td><input type="number" value="${r.cant}" step="0.001" style="width:90px" onchange="editItems[${i}].cant=parseFloat(this.value)||0"></td><td>${r.unidad}</td><td><button class="btn sm danger" onclick="editItems.splice(${i},1);renderEI()">✕</button></td></tr>`).join('')+'</tbody></table>':'<div class="empty" style="padding:10px">Sin ingredientes</div>';}
+function addEditItem(){const idx=document.getElementById('e-ins').value;if(idx==='')return;const ins=D.insumos[idx];const cant=parseFloat(document.getElementById('e-cant').value)||0;if(!cant)return;editItems.push({insIdx:parseInt(idx),nombre:ins.nombre,cant,unidad:ins.unidad,proc:!!ins.proc});document.getElementById('e-cant').value='';renderEI();}
+function guardarEdicionF(){if(editIdx<0)return;const n=document.getElementById('e-nombre').value.trim();if(!n){toast('Ingresá nombre');return;}D.recetas[editIdx]={...D.recetas[editIdx],nombre:n,tipo:document.getElementById('e-tipo').value,uprod:document.getElementById('e-uprod').value,items:[...editItems]};save();cm('modal-form');renderRecetas();toast('Formulación actualizada');}
+function renderRecetas(){
+  document.getElementById('rec-lista').innerHTML=D.recetas.length?D.recetas.map((r,idx)=>{
+    const cT=calcTeorico(r);
+    return`<div class="card" style="margin-bottom:10px"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;flex-wrap:wrap;gap:6px"><b>${r.nombre}</b><div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap"><span class="badge prod">${r.tipo}</span><span style="font-size:12px;color:#003087;font-weight:600">Costo teórico: ${fP(cT)}/u</span><button class="btn sm info" onclick="editarFormulacion(${idx})">✎ Editar</button><button class="btn sm danger" onclick="if(confirm('¿Eliminar?')){D.recetas.splice(${idx},1);save();renderRecetas();}">✕</button></div></div><table><thead><tr><th>Insumo</th><th>Cant./u.</th><th>Tipo</th><th>Costo teórico</th></tr></thead><tbody>${r.items.map(i=>{const ins=D.insumos[i.insIdx];return`<tr><td>${i.nombre}</td><td>${fN(i.cant)}</td><td>${i.proc?'<span class="proc-tag">Baldes</span>':'Directo'}</td><td>${ins?fP(i.cant*(parseFloat(ins.costo)||0)):'—'}</td></tr>`;}).join('')}</tbody></table></div>`;
+  }).join(''):'<div class="empty">Sin formulaciones</div>';
+  updSelRec();
+}
+function updSelRec(){
+  const opts=D.recetas.map((r,i)=>`<option value="${i}">${r.nombre}</option>`).join('');
+  ['prod-rec','costo-sel'].forEach(id=>{const el=document.getElementById(id);if(el){const p=el.value;el.innerHTML='<option value="">-- seleccionar --</option>'+opts;el.value=p;}});
+  const hs=document.getElementById('hist-sel');if(hs){const p=hs.value;hs.innerHTML='<option value="">Todos</option>'+opts;hs.value=p;}
+}
+
+// ── PRODUCCIÓN ────────────────────────────────────────────────────────────────
+// pCT: array de {insIdx, nombre, unidad, cant (teórica), cantReal, costoSnap, proc, baldesSeleccionados}
+let pCT=[];
+function cargarLote(){
+  const idx=document.getElementById('prod-rec').value;
+  if(idx===''){pCT=[];document.getElementById('prod-consumos').innerHTML='<div class="empty">Seleccioná un producto</div>';document.getElementById('prod-preview').innerHTML='';return;}
+  const rec=D.recetas[idx];
+  pCT=rec.items.map(r=>{
+    const ins=D.insumos[r.insIdx];
+    return{insIdx:r.insIdx,nombre:r.nombre,unidad:r.unidad,cantTeorica:r.cant,cantReal:r.cant,costoSnap:ins?parseFloat(ins.costo):0,proc:!!r.proc,baldesSeleccionados:[]};
+  });
+  renderProdConsumos();
+}
+
+function baldesDeIns(insNombre){
+  return(D.baldes||[]).filter(b=>b.estado!=='vacio'&&b.insNombre===insNombre);
+}
+
+function onBaldeCheck(pIdx){
+  const r=pCT[pIdx];
+  const checks=document.querySelectorAll(`.bc-${pIdx}`);
+  r.baldesSeleccionados=[];
+  let sumaKg=0;let sumaCosto=0;
+  checks.forEach(cb=>{
+    if(cb.checked){
+      const b=(D.baldes||[]).find(x=>String(x.id)===cb.dataset.bid);
+      if(b){r.baldesSeleccionados.push(cb.dataset.bid);sumaKg+=b.disp;sumaCosto+=b.disp*(b.costNeto||0);}
+    }
+  });
+  // precargar cantidad con la suma de disponible
+  const inp=document.getElementById(`cr-${pIdx}`);
+  if(inp&&sumaKg>0){inp.value=parseFloat(sumaKg.toFixed(1));r.cantReal=parseFloat(sumaKg.toFixed(1));}
+  // costo promedio ponderado de los baldes seleccionados
+  r.costoSnap=sumaKg>0?parseFloat((sumaCosto/sumaKg).toFixed(2)):(D.insumos[r.insIdx]?parseFloat(D.insumos[r.insIdx].costo):0);
+  // actualizar resumen
+  const resEl=document.getElementById(`bres-${pIdx}`);
+  if(resEl)resEl.innerHTML=r.baldesSeleccionados.length?`<div class="bsr">${r.baldesSeleccionados.length} balde(s) · ${fN(sumaKg)} kg disponibles · Costo PP: <b>${fP(r.costoSnap)}/kg</b></div>`:'';
+  calcLote();
+}
+
+function renderProdConsumos(){
+  if(!pCT.length){document.getElementById('prod-consumos').innerHTML='<div class="empty">Seleccioná un producto</div>';return;}
+  let html=`<table><thead><tr><th>Ingrediente</th><th>Cant. teórica/u.</th><th>Cantidad real total en el lote</th><th>Costo/u.</th><th>Subtotal</th></tr></thead><tbody>`;
+  pCT.forEach((r,i)=>{
+    const baldesDisp=r.proc?baldesDeIns(r.nombre):[];
+    let baldeHtml='';
+    if(r.proc){
+      baldeHtml=`<div class="bgs" style="margin-top:6px">
+        <div style="font-size:11px;font-weight:600;color:#1a5276;margin-bottom:4px">Baldes disponibles — seleccioná los utilizados:</div>
+        ${baldesDisp.length?baldesDisp.map(b=>`<div class="bcr"><input type="checkbox" class="bc-${i}" data-bid="${b.id}" onchange="onBaldeCheck(${i})"><span>Balde <b>${b.numero}</b> · ${fN(b.disp)} kg · ${fP(b.costNeto||0)}/kg</span><span class="badge ${b.estado}" style="margin-left:auto">${b.estado==='lleno'?'Lleno':'Parcial'}</span></div>`).join(''):'<div style="font-size:12px;color:#999;padding:4px 0">Sin baldes disponibles para este insumo. Ingresá stock desde Procesamiento MP.</div>'}
+        <div id="bres-${i}"></div>
+      </div>`;
+    }
+    html+=`<tr>
+      <td><b>${r.nombre}</b>${r.proc?'<span class="proc-tag">Baldes</span>':''}${baldeHtml}</td>
+      <td style="color:#666">${fN(r.cantTeorica)}</td>
+      <td><input type="number" id="cr-${i}" value="${r.cantReal||''}" placeholder="0" step="0.1" style="width:120px" onchange="pCT[${i}].cantReal=parseFloat(this.value)||0;calcLote()"></td>
+      <td id="cs-${i}">${fP(r.costoSnap)}</td>
+      <td id="sub-${i}">${fP((r.cantReal||0)*r.costoSnap)}</td>
+    </tr>`;
+  });
+  html+='</tbody></table>';
+  document.getElementById('prod-consumos').innerHTML=html;
+  calcLote();
+}
+
+function calcLote(){
+  pCT.forEach((r,i)=>{
+    const cs=document.getElementById('cs-'+i);if(cs)cs.textContent=fP(r.costoSnap);
+    const sub=document.getElementById('sub-'+i);if(sub)sub.textContent=fP((r.cantReal||0)*r.costoSnap);
+  });
+  const u=parseFloat(document.getElementById('prod-unidades').value)||0;
+  let cdReal=0;pCT.forEach(r=>cdReal+=(r.cantReal||0)*r.costoSnap);
+  const cdRU=u>0?cdReal/u:0;const cf=getCFU();const ap=(parseFloat(D.fijos.admin)||0)/100;
+  const ctR=cdRU*(1+ap)+cf;const m=(parseFloat(D.fijos.margen)||30)/100;const ps=m<1?ctR/(1-m):ctR*1.3;
+  const ri=document.getElementById('prod-rec').value;const rec=ri?D.recetas[ri]:null;
+  const cdT=rec?calcTeorico(rec):0;const diff=u>0?cdRU-cdT:0;
+  document.getElementById('prod-preview').innerHTML=`<div class="cb" style="margin-top:14px"><div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+    <div><div style="font-weight:600;color:#003087;margin-bottom:6px">Costo REAL</div>
+      <div class="cr"><span>Total insumos</span><span>${fP(cdReal)}</span></div>
+      <div class="cr"><span>Unidades obtenidas</span><span>${fN(u)}</span></div>
+      <div class="cr total"><span>Costo real/u.</span><span>${fP(cdRU)}</span></div>
+      <div class="cr"><span>+ Costo fijo/u.</span><span>${fP(cf)}</span></div>
+      <div class="cr" style="color:#2e7d32;font-weight:600"><span>Precio sugerido</span><span>${fP(ps)}</span></div>
+    </div>
+    <div><div style="font-weight:600;color:#1a5276;margin-bottom:6px">vs. Teórico</div>
+      <div class="cr"><span>Costo teórico/u.</span><span>${fP(cdT)}</span></div>
+      <div class="cr ${diff>0?'worse':'better'}"><span>Diferencia</span><span>${diff>0?'+':''}${fP(diff)}</span></div>
+      <div style="margin-top:8px;font-size:11px;color:#888">${diff>0?'⚠ Real > teórico':diff<0?'✓ Real < teórico':'= Igual'}</div>
+    </div>
+  </div></div>`;
+}
+
+function registrarProduccion(){
+  const ri=document.getElementById('prod-rec').value;if(ri===''){toast('Seleccioná formulación');return;}
+  const rec=D.recetas[ri];
+  const u=parseFloat(document.getElementById('prod-unidades').value)||0;if(!u||u<=0){toast('Ingresá unidades obtenidas (mayor a 0)');return;}
+  const lote=document.getElementById('prod-lote').value||'L-AUTO-'+(D.lotes.length+1);
+  const fecha=document.getElementById('prod-fecha').value||hoy();
+
+  // ── PASO 1: calcular costo real total ─────────────────────────────────────
+  let cdReal=0;
+  const consumosSnap=pCT.map(r=>({...r,costoFinal:r.costoSnap}));
+  consumosSnap.forEach(r=>cdReal+=parseFloat(((r.cantReal||0)*r.costoFinal).toFixed(2)));
+  const cdRU=u>0?parseFloat((cdReal/u).toFixed(2)):0;
+  const cdT=calcTeorico(rec);const cf=getCFU();const ap=(parseFloat(D.fijos.admin)||0)/100;
+  const ctR=parseFloat((cdRU*(1+ap)+cf).toFixed(2));
+  const m=(parseFloat(D.fijos.margen)||30)/100;const ps=parseFloat((m<1?ctR/(1-m):ctR*1.3).toFixed(2));
+
+  // ── PASO 2: descontar stock de insumos ────────────────────────────────────
+  // IMPORTANTE: para insumos con baldes, el stock ya refleja el procesamiento.
+  // El consumo en producción descuenta del stock del insumo UNA SOLA VEZ aquí.
+  pCT.forEach(r=>{
+    const ins=D.insumos[r.insIdx];
+    if(!ins)return;
+    const cantidad=parseFloat((r.cantReal||0).toFixed(1));
+    if(cantidad<=0)return;
+    ins.stock=parseFloat(Math.max(0,parseFloat(ins.stock)-cantidad).toFixed(1));
+    regKardex(ins.nombre,'Consumo producción',0,cantidad,ins.stock,r.costoSnap,`Lote ${lote}`);
+  });
+
+  // ── PASO 3: descontar baldes seleccionados ────────────────────────────────
+  // Se descuenta de los baldes el kg consumido prorateado.
+  // NO se descuenta del stock del insumo (ya se hizo en paso 2).
+  pCT.forEach(r=>{
+    if(!r.proc||!r.baldesSeleccionados||r.baldesSeleccionados.length===0)return;
+    const baldesSel=r.baldesSeleccionados.map(bid=>(D.baldes||[]).find(b=>String(b.id)===bid)).filter(Boolean);
+    if(!baldesSel.length)return;
+    const cantUsada=parseFloat((r.cantReal||0).toFixed(1));
+    const totalDisp=parseFloat(baldesSel.reduce((s,b)=>s+b.disp,0).toFixed(1));
+    // prorratear: cada balde aporta proporcional a su disponible
+    // si la cantidad usada > total disponible, no pasar de cero
+    baldesSel.forEach(b=>{
+      const proporcion=totalDisp>0?b.disp/totalDisp:1/baldesSel.length;
+      const consumido=parseFloat(Math.min(b.disp,(cantUsada*proporcion)).toFixed(1));
+      b.disp=parseFloat(Math.max(0,b.disp-consumido).toFixed(1));
+      b.estado=b.disp<=0?'vacio':b.disp<b.pesoNeto?'parcial':'lleno';
+      if(!b.lotes)b.lotes=[];if(!b.lotes.includes(lote))b.lotes.push(lote);
+    });
+  });
+
+  // ── PASO 4: registrar lote y stock de productos terminados ────────────────
+  const lo={id:Date.now(),recIdx:parseInt(ri),recNombre:rec.nombre,tipo:rec.tipo,lote,fecha,mep:document.getElementById('prod-mep').value,tipoProd:document.getElementById('prod-tipo').value,curso:document.getElementById('prod-curso').value,u,envase:document.getElementById('prod-envase').value,obs:document.getElementById('prod-obs').value,cdReal,cdRU,cdT,cf,ap,ctR,ps,consumos:consumosSnap};
+  D.lotes.push(lo);
+  D.stock.prod.push({loteId:lo.id,lote,producto:rec.nombre,tipo:rec.tipo,u,fechaProd:fecha,costoUnit:ctR,precioSug:ps});
+  D.historial.push({fecha,lote,producto:rec.nombre,u,cdReal,cdRU,cdT,cf,ctR,ps,mep:lo.mep,tipo:rec.tipo,envase:lo.envase,consumos:consumosSnap});
+  D.movimientos.push({tipo:'Producción → Almacén Prod.',producto:rec.nombre,lote,cantidad:u,fecha:hoy()});
+  save();
+  ['prod-lote','prod-mep','prod-unidades','prod-obs','prod-curso'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('prod-rec').value='';pCT=[];
+  document.getElementById('prod-consumos').innerHTML='<div class="empty">Seleccioná un producto</div>';
+  document.getElementById('prod-preview').innerHTML='';
+  toast(`Lote ${lote} registrado — ${fN(u)} u. en Almacén Producción`);
+}
+
+// ── EDITAR NOMBRE/NÚMERO DE LOTE ─────────────────────────────────────────────
+function mostrarConsejoAuditoria(){
+  alert(`CONSEJOS DE AUDITORÍA — ERROR EN CARGA DE LOTE
+
+CASO 1: Lote en Almacén Producción (aún no movido)
+→ Usá el botón "✕ Anular" en la fila del lote.
+→ El sistema devuelve el stock de insumos y baldes automáticamente.
+→ El historial conserva el registro marcado como ANULADO.
+→ Después podés registrar el lote correcto.
+
+CASO 2: Lote ya movido a Depósito o Ventas
+→ No se puede anular automáticamente.
+→ Procedimiento manual:
+   1. Registrá un movimiento inverso anotando en Observaciones "Corrección de error - Lote XXX".
+   2. Ajustá manualmente el stock de insumos desde la solapa Insumos (botón ＋ Stock con cantidad negativa no está disponible, usá "Editar" y corregí el stock manualmente).
+   3. Si afecta baldes, editá el balde desde Procesamiento MP → Stock de baldes → Editar.
+   4. Registrá el lote correcto.
+   5. Conservá nota del error con fecha, responsable y descripción para trazabilidad.
+
+CASO 3: Error en datos del lote (fecha, MEP, etc.)
+→ Para el N° de lote: usá el botón "✎ Lote".
+→ Para otros datos: no hay edición directa. Registrá una nota en Observaciones del siguiente movimiento.
+
+PRINCIPIO GENERAL: Nunca borres datos históricos. Siempre preferí la corrección con trazabilidad sobre el borrado.`);
+}
+
+function editarNombreLote(loteId){
+  const lid=parseInt(loteId);
+  // encontrar en todos los almacenes
+  const sprod=(D.stock.prod||[]).find(i=>i.loteId===lid);
+  const sdep=(D.stock.dep||[]).find(i=>i.loteId===lid);
+  const sven=(D.stock.ven||[]).find(i=>i.loteId===lid);
+  const lote=D.lotes.find(l=>l.id===lid);
+  const actual=sprod?.lote||sdep?.lote||sven?.lote||lote?.lote||'';
+  const nuevo=prompt(`N° de lote actual: "${actual}"
+Ingresá el nuevo nombre/número de lote:`,actual);
+  if(!nuevo||nuevo.trim()===''||nuevo===actual)return;
+  const n=nuevo.trim();
+  if(sprod)sprod.lote=n;
+  if(sdep)sdep.lote=n;
+  if(sven)sven.lote=n;
+  if(lote)lote.lote=n;
+  // actualizar en historial
+  const h=D.historial.find(h=>h.lote===actual&&h.producto===(sprod||sdep||sven)?.producto);
+  if(h)h.lote=n;
+  // actualizar en movimientos
+  D.movimientos.forEach(m=>{if(m.lote===actual)m.lote=n;});
+  // actualizar en baldes
+  (D.baldes||[]).forEach(b=>{if(b.lotes&&b.lotes.includes(actual)){const idx=b.lotes.indexOf(actual);b.lotes[idx]=n;}});
+  save();renderStock();toast(`Lote renombrado a "${n}"`);
+}
+
+// ── ANULAR LOTE (reversión completa) ────────────────────────────────────────
+// Criterio auditoría: no borra datos históricos — registra la anulación en kardex y movimientos.
+// Devuelve el stock consumido a insumos. Borra de stock de productos terminados.
+function anularLote(loteId){
+  const lid=parseInt(loteId);
+  const sprod=(D.stock.prod||[]).find(i=>i.loteId===lid);
+  if(!sprod){toast('Lote no encontrado en Almacén Producción. Solo se pueden anular lotes que aún no se movieron a Depósito.');return;}
+  // verificar que no fue movido a depósito o ventas
+  const sdep=(D.stock.dep||[]).find(i=>i.loteId===lid&&i.u>0);
+  const sven=(D.stock.ven||[]).find(i=>i.loteId===lid&&i.u>0);
+  if(sdep||sven){
+    toast('Este lote ya tiene unidades en Depósito o Ventas. No se puede anular automáticamente. Consultá el consejo de auditoría (botón ℹ).');
+    return;
+  }
+  const lote=D.lotes.find(l=>l.id===lid);
+  if(!lote){toast('Datos del lote no encontrados');return;}
+  if(!confirm(`¿Anular el lote "${lote.lote}" (${lote.recNombre})?
+
+Esto devolverá el stock consumido a los insumos correspondientes y eliminará las unidades producidas del Almacén Producción.
+
+El registro histórico del lote se conserva marcado como ANULADO.`))return;
+  // ── Devolver stock a insumos ─────────────────────────────────────────────
+  (lote.consumos||[]).forEach(c=>{
+    const ins=D.insumos.find(i=>i.nombre===c.nombre);
+    if(!ins)return;
+    const cant=parseFloat((c.cantReal||0).toFixed(1));
+    if(cant<=0)return;
+    ins.stock=parseFloat((parseFloat(ins.stock)+cant).toFixed(1));
+    regKardex(ins.nombre,'Anulación lote',cant,0,ins.stock,c.costoFinal||0,`Anulación ${lote.lote}`);
+  });
+  // ── Devolver stock a baldes ──────────────────────────────────────────────
+  (lote.consumos||[]).forEach(c=>{
+    if(!c.proc||!c.baldesSeleccionados||!c.baldesSeleccionados.length)return;
+    c.baldesSeleccionados.forEach(bid=>{
+      const b=(D.baldes||[]).find(x=>String(x.id)===bid);
+      if(!b)return;
+      // restaurar proporcional — recalcular cuánto consumió este balde
+      const totalDispOrig=parseFloat((lote.consumos.filter(cc=>cc.nombre===c.nombre).reduce((s,cc)=>s+(cc.cantReal||0),0)).toFixed(1));
+      const proporcion=totalDispOrig>0?(b.pesoNeto-b.disp)/totalDispOrig:0;
+      const restaurar=parseFloat(((c.cantReal||0)*proporcion).toFixed(1));
+      b.disp=parseFloat(Math.min(b.pesoNeto,b.disp+restaurar).toFixed(1));
+      b.estado=b.disp<=0?'vacio':b.disp<b.pesoNeto?'parcial':'lleno';
+      // quitar el lote de la lista del balde
+      if(b.lotes)b.lotes=b.lotes.filter(l=>l!==lote.lote);
+    });
+  });
+  // ── Eliminar de stock.prod ───────────────────────────────────────────────
+  D.stock.prod=D.stock.prod.filter(i=>i.loteId!==lid);
+  // ── Marcar lote como anulado en historial (no borrar) ───────────────────
+  const h=D.historial.find(h=>h.lote===lote.lote);
+  if(h)h.anulado=true;
+  // ── Registrar movimiento de anulación ────────────────────────────────────
+  D.movimientos.push({tipo:'⚠ Anulación de lote',producto:lote.recNombre,lote:lote.lote,cantidad:lote.u,fecha:hoy()});
+  save();renderStock();toast(`Lote "${lote.lote}" anulado · stock de insumos restituido`);
+}
+
+// ── STOCK (movimientos entre almacenes) ───────────────────────────────────────
+function renderStock(){
+  document.getElementById('st-prod-t').innerHTML=(D.stock.prod||[]).filter(i=>i.u>0).map(i=>`<tr><td>${i.producto}</td><td><span class="badge prod">${i.tipo||''}</span></td><td>${i.lote}</td><td><b>${fN(i.u)}</b></td><td>${i.fechaProd}</td><td>${fP(i.costoUnit)}</td><td>${fP(i.precioSug)}</td><td style="display:flex;gap:4px"><button class="btn sm warning" onclick="editarNombreLote('${i.loteId}')">✎ Lote</button><button class="btn sm danger" onclick="anularLote('${i.loteId}')">✕ Anular</button></td></tr>`).join('')||'<tr><td colspan="8" class="empty">Sin stock</td></tr>';
+  document.getElementById('st-dep-t').innerHTML=(D.stock.dep||[]).filter(i=>i.u>0).map(i=>`<tr><td>${i.producto}</td><td><span class="badge dep">${i.tipo||''}</span></td><td>${i.lote}</td><td><b>${fN(i.u)}</b></td><td>${i.fechaDep}</td><td>${fP(i.costoUnit)}</td></tr>`).join('')||'<tr><td colspan="6" class="empty">Sin stock</td></tr>';
+  document.getElementById('st-ven-t').innerHTML=(D.stock.ven||[]).filter(i=>i.u>0).map(i=>`<tr><td>${i.producto}</td><td>${i.lote}</td><td><b>${fN(i.u)}</b></td><td>${fP(i.precioSug)}</td></tr>`).join('')||'<tr><td colspan="4" class="empty">Sin stock</td></tr>';
+  document.getElementById('st-ins-t').innerHTML=D.insumos.map(i=>{const e=parseFloat(i.stock)<=0?'<span class="badge critico">Crítico</span>':parseFloat(i.stock)<=parseFloat(i.min)?'<span class="badge bajo">Bajo</span>':'<span class="badge ok">OK</span>';return`<tr><td>${i.nombre}${i.proc?'<span class="proc-tag">Baldes</span>':''}</td><td>${i.unidad}</td><td>${fN(i.stock)}</td><td>${fN(i.min)}</td><td>${e}</td><td>${fP(i.costo)}</td></tr>`;}).join('')||'<tr><td colspan="6" class="empty">Sin insumos</td></tr>';
+  document.getElementById('st-movs-t').innerHTML=[...D.movimientos].reverse().map(m=>`<tr><td>${m.fecha}</td><td style="color:#003087;font-weight:600">${m.tipo}</td><td>${m.producto}</td><td>${m.lote}</td><td>${fN(m.cantidad)}</td></tr>`).join('')||'<tr><td colspan="5" class="empty">Sin movimientos</td></tr>';
+  // selects movimientos
+  document.getElementById('mv-lote-dep').innerHTML='<option value="">--</option>'+(D.stock.prod||[]).filter(i=>i.u>0).map(i=>`<option value="${i.loteId}">${i.lote} — ${i.producto} (${fN(i.u)} u.)</option>`).join('');
+  document.getElementById('mv-lote-ven').innerHTML='<option value="">--</option>'+(D.stock.dep||[]).filter(i=>i.u>0).map(i=>`<option value="${i.loteId}">${i.lote} — ${i.producto} (${fN(i.u)} u.)</option>`).join('');
+  document.getElementById('venta-lote').innerHTML='<option value="">--</option>'+(D.stock.ven||[]).filter(i=>i.u>0).map(i=>`<option value="${i.loteId}">${i.lote} — ${i.producto} (${fN(i.u)} u.)</option>`).join('');
+  document.getElementById('mp-ins').innerHTML='<option value="">--</option>'+D.insumos.filter(i=>!i.proc).map((i,idx)=>`<option value="${D.insumos.indexOf(i)}">${i.nombre} (${fN(i.stock)} ${i.unidad})</option>`).join('');
+}
+function mvPD(){
+  const id=parseInt(document.getElementById('mv-lote-dep').value);const c=parseFloat(document.getElementById('mv-cant-dep').value)||0;
+  if(!id||c<=0){toast('Seleccioná lote y una cantidad mayor a 0');return;}
+  const it=(D.stock.prod||[]).find(i=>i.loteId===id);if(!it||it.u<c){toast('Stock insuficiente');return;}
+  it.u=parseFloat((it.u-c).toFixed(1));
+  const ex=(D.stock.dep||[]).find(i=>i.loteId===id);
+  if(ex)ex.u=parseFloat((ex.u+c).toFixed(1));
+  else{D.stock.dep=D.stock.dep||[];D.stock.dep.push({...it,u:c,fechaDep:hoy()});}
+  D.movimientos.push({tipo:'Producción → Depósito',producto:it.producto,lote:it.lote,cantidad:c,fecha:hoy()});
+  save();renderStock();document.getElementById('mv-cant-dep').value='';toast(`${fN(c)} u. → Depósito`);
+}
+function mvDV(){
+  const id=parseInt(document.getElementById('mv-lote-ven').value);const c=parseFloat(document.getElementById('mv-cant-ven').value)||0;
+  if(!id||c<=0){toast('Seleccioná lote y una cantidad mayor a 0');return;}
+  const it=(D.stock.dep||[]).find(i=>i.loteId===id);if(!it||it.u<c){toast('Stock insuficiente');return;}
+  it.u=parseFloat((it.u-c).toFixed(1));
+  const ex=(D.stock.ven||[]).find(i=>i.loteId===id);
+  if(ex)ex.u=parseFloat((ex.u+c).toFixed(1));
+  else{D.stock.ven=D.stock.ven||[];D.stock.ven.push({...it,u:c,fechaVen:hoy()});}
+  D.movimientos.push({tipo:'Depósito → Ventas',producto:it.producto,lote:it.lote,cantidad:c,fecha:hoy()});
+  save();renderStock();document.getElementById('mv-cant-ven').value='';toast(`${fN(c)} u. → Ventas`);
+}
+function regVenta(){
+  const id=parseInt(document.getElementById('venta-lote').value);const c=parseFloat(document.getElementById('venta-cant').value)||0;
+  if(!id||c<=0){toast('Seleccioná lote y una cantidad mayor a 0');return;}
+  const it=(D.stock.ven||[]).find(i=>i.loteId===id);if(!it||it.u<c){toast('Stock insuficiente');return;}
+  const p=parseFloat(document.getElementById('venta-precio').value);if(!p||p<=0){toast('Ingresá un precio de venta mayor a 0');return;}
+  it.u=parseFloat((it.u-c).toFixed(1));
+  D.ventas=D.ventas||[];D.ventas.push({loteId:id,producto:it.producto,lote:it.lote,cant:c,precio:p,total:parseFloat((c*p).toFixed(2)),fecha:hoy()});
+  D.movimientos.push({tipo:'Venta registrada',producto:it.producto,lote:it.lote,cantidad:c,fecha:hoy()});
+  save();renderStock();['venta-cant','venta-precio'].forEach(id=>document.getElementById(id).value='');toast(`Venta: ${fN(c)} u. a ${fP(p)}`);
+}
+
+// ── COSTOS ────────────────────────────────────────────────────────────────────
+function stCostos(id,btn){
+  ['formulacion','lotes'].forEach(s=>{const el=document.getElementById('costos-'+s);if(el)el.style.display='none';});
+  document.querySelectorAll('#tab-costos .tsb').forEach(b=>b.classList.remove('active'));
+  document.getElementById('costos-'+id).style.display='block';btn.classList.add('active');
+  if(id==='lotes'){updLotesDetSel();renderLotesDetalle();}
+}
+function renderCostos(){updSelRec();updLotesDetSel();mostrarCostos();}
+
+function updLotesDetSel(){
+  const sel=document.getElementById('lotes-det-sel');if(!sel)return;
+  const cur=sel.value;
+  const prods=[...new Set(D.historial.map(h=>h.producto))];
+  sel.innerHTML='<option value="">Todos</option>'+prods.map(p=>`<option value="${p}">${p}</option>`).join('');
+  sel.value=cur;
+}
+
+function renderLotesDetalle(){
+  const filtro=document.getElementById('lotes-det-sel').value;
+  const datos=filtro?D.historial.filter(h=>h.producto===filtro):[...D.historial];
+  const sorted=[...datos].sort((a,b)=>new Date(b.fecha)-new Date(a.fecha)||b.lote.localeCompare(a.lote));
+  const el=document.getElementById('lotes-detalle-body');
+  if(!sorted.length){el.innerHTML='<div class="empty">Sin lotes producidos</div>';return;}
+  el.innerHTML=sorted.map(h=>{
+    const d=(h.cdRU||0)-(h.cdT||0);
+    const dCls=d>0?'worse':'better';
+    const consumosHtml=(h.consumos||[]).map(c=>'<div class="cr"><span>'+c.nombre+(c.proc?' [balde]':'')+'</span><span>'+fN(c.cantReal||0)+' '+( c.unidad||'')+' x '+fP(c.costoFinal||0)+' = <b>'+fP((c.cantReal||0)*(c.costoFinal||0))+'</b></span></div>').join('');
+    return '<div class="card" style="margin-bottom:12px">'
+      +'<div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;margin-bottom:12px">'
+      +'<div><span style="font-size:15px;font-weight:600">'+h.producto+'</span> <span style="color:#666;font-size:13px">— Lote '+h.lote+'</span></div>'
+      +'<div style="display:flex;gap:8px;align-items:center"><span style="font-size:12px;color:#666">'+h.fecha+'</span>'
+      +(h.mep?'<span style="font-size:12px;color:#666">MEP: '+h.mep+'</span>':'')
+      +'<span class="badge prod">'+(h.tipo||'')+'</span></div></div>'
+      +'<div class="grid4" style="margin-bottom:12px">'
+      +'<div class="metric"><div class="val">'+fN(h.u)+'</div><div class="lbl">Unidades producidas</div></div>'
+      +'<div class="metric red"><div class="val">'+fP(h.cdRU||0)+'</div><div class="lbl">Costo dir. real/u.</div></div>'
+      +'<div class="metric amber"><div class="val">'+fP(h.cf||0)+'</div><div class="lbl">Costo fijo/u.</div></div>'
+      +'<div class="metric green"><div class="val">'+fP(h.ps||0)+'</div><div class="lbl">Precio sugerido</div></div></div>'
+      +'<div class="cb"><b>Consumos reales del lote</b><div style="margin-top:8px">'
+      +consumosHtml
+      +'<div class="cr total"><span>Total insumos del lote</span><span>'+fP(h.cdReal||0)+'</span></div>'
+      +'<div class="cr"><span>Costo directo real / unidad</span><span>'+fP(h.cdRU||0)+'</span></div>'
+      +'<div class="cr '+dCls+'"><span>vs. Costo teórico / unidad</span><span>'+fP(h.cdT||0)+' ('+(d>0?'+':'')+fP(d)+')</span></div>'
+      +'</div></div></div>';
+  }).join('');
+}
+
+function expLotesDetalle(){
+  const filtro=document.getElementById('lotes-det-sel').value;
+  const datos=filtro?D.historial.filter(h=>h.producto===filtro):[...D.historial];
+  const rows=[['Fecha','Lote','Producto','MEP','Unidades','Insumo','Cant. real','Costo unit.','Subtotal','Costo dir. real/u.','Costo teórico/u.','Diferencia','Precio sug.']];
+  datos.forEach(h=>{
+    (h.consumos||[]).forEach((c,i)=>rows.push([h.fecha,h.lote,h.producto,h.mep||'',h.u,c.nombre,c.cantReal||0,c.costoFinal||0,(c.cantReal||0)*(c.costoFinal||0),i===0?h.cdRU||0:'',i===0?h.cdT||0:'',i===0?(h.cdRU||0)-(h.cdT||0):'',i===0?h.ps||0:'']));
+  });
+  csvXls(rows,'lotes_detalle');
+}
+function mostrarCostos(){
+  const idx=document.getElementById('costo-sel').value;const el=document.getElementById('costo-detalle');if(idx===''){el.innerHTML='';return;}
+  const rec=D.recetas[idx];const cdT=calcTeorico(rec);const cf=getCFU();const ap=(parseFloat(D.fijos.admin)||0)/100;const ctT=cdT*(1+ap)+cf;const m=(parseFloat(D.fijos.margen)||30)/100;const ps=m<1?ctT/(1-m):ctT*1.3;
+  const lh=D.historial.filter(h=>h.producto===rec.nombre);const avgReal=lh.length?lh.reduce((s,h)=>s+(h.cdRU||0),0)/lh.length:null;
+  el.innerHTML=`<div class="card"><div class="card-title"><span class="dot"></span>Costos — ${rec.nombre}</div><div class="grid4" style="margin-bottom:14px"><div class="metric"><div class="val">${fP(cdT)}</div><div class="lbl">Costo dir. teórico/u.</div></div><div class="metric amber"><div class="val">${fP(cf)}</div><div class="lbl">Costo fijo/u.</div></div><div class="metric red"><div class="val">${fP(ctT)}</div><div class="lbl">Costo total teórico/u.</div></div><div class="metric green"><div class="val">${fP(ps)}</div><div class="lbl">Precio sugerido</div></div></div>${avgReal!==null?`<div class="hb">Costo real promedio histórico: <b>${fP(avgReal)}/u.</b> — vs. teórico: <b>${avgReal>cdT?'+':''}${fP(avgReal-cdT)}</b></div>`:''}<div class="cb" style="margin-top:12px"><b>Detalle formulación</b><div style="margin-top:8px">${rec.items.map(r=>{const ins=D.insumos[r.insIdx];return`<div class="cr"><span>${r.nombre} · ${fN(r.cant)}/u${r.proc?' [baldes]':''}</span><span>${ins?fP(r.cant*(parseFloat(ins.costo)||0)):'—'}</span></div>`;}).join('')}<div class="cr total"><span>Total teórico</span><span>${fP(cdT)}</span></div></div></div></div>${lh.length?`<div class="card"><div class="card-title"><span class="dot"></span>Historial real vs. teórico</div><table><thead><tr><th>Fecha</th><th>Lote</th><th>Unidades</th><th>Costo real/u.</th><th>Costo teórico/u.</th><th>Diferencia</th><th>Precio sug.</th></tr></thead><tbody>${lh.map(h=>{const d=(h.cdRU||0)-(h.cdT||0);return`<tr><td>${h.fecha}</td><td>${h.lote}</td><td>${fN(h.u)}</td><td><b>${fP(h.cdRU)}</b></td><td>${fP(h.cdT)}</td><td class="${d>0?'worse':'better'}">${d>0?'+':''}${fP(d)}</td><td>${fP(h.ps)}</td></tr>`;}).join('')}</tbody></table></div>`:''}`;
+}
+
+// ── COSTOS FIJOS ──────────────────────────────────────────────────────────────
+function renderFijos(){const f=D.fijos;[['fij-salario',f.salario],['fij-prod-anual',f.prodAnual||8000],['fij-luz',f.luz],['fij-gas',f.gas],['fij-agua',f.agua],['fij-otros',f.otros],['fij-admin',f.admin],['fij-margen',f.margen||30]].forEach(([id,v])=>document.getElementById(id).value=v||'');renderAmorts();updFijosRes();}
+function saveFijos(){const f=D.fijos;[['fij-salario','salario'],['fij-prod-anual','prodAnual'],['fij-luz','luz'],['fij-gas','gas'],['fij-agua','agua'],['fij-otros','otros'],['fij-admin','admin'],['fij-margen','margen']].forEach(([id,k])=>f[k]=parseFloat(document.getElementById(id).value)||0);f.prodAnual=f.prodAnual||8000;f.margen=f.margen||30;save();updFijosRes();}
+function addAmort(){const n=document.getElementById('amort-nombre').value.trim();const v=parseFloat(document.getElementById('amort-valor').value)||0;const u=parseFloat(document.getElementById('amort-vida').value)||10;if(!n||!v){toast('Ingresá nombre y valor');return;}D.fijos.amortizaciones.push({nombre:n,valor:v,vida:u});save();renderAmorts();updFijosRes();['amort-nombre','amort-valor','amort-vida'].forEach(id=>document.getElementById(id).value='');}
+function renderAmorts(){document.getElementById('amort-lista').innerHTML=(D.fijos.amortizaciones||[]).length?`<table><thead><tr><th>Activo</th><th>Valor</th><th>Vida útil</th><th>Amort. anual</th><th></th></tr></thead><tbody>${D.fijos.amortizaciones.map((a,i)=>`<tr><td>${a.nombre}</td><td>${fP(a.valor)}</td><td>${a.vida} años</td><td>${fP(a.valor/a.vida)}</td><td><button class="btn sm danger" onclick="D.fijos.amortizaciones.splice(${i},1);save();renderAmorts();updFijosRes()">✕</button></td></tr>`).join('')}</tbody></table>`:'<div class="empty">Sin activos</div>';}
+function updFijosRes(){const f=D.fijos;const sA=(f.salario||0)*12;const sM=(f.luz||0)+(f.gas||0)+(f.agua||0)+(f.otros||0);const amA=(f.amortizaciones||[]).reduce((s,a)=>s+(a.valor/a.vida),0);const tot=sA+sM*12+amA;const cpu=(f.prodAnual||8000)>0?tot/(f.prodAnual||8000):0;document.getElementById('fijos-resumen').innerHTML=`<div class="cb"><div class="cr"><span>Personal anual</span><span>${fP(sA)}</span></div><div class="cr"><span>Servicios anuales</span><span>${fP(sM*12)}</span></div><div class="cr"><span>Amortizaciones anuales</span><span>${fP(amA)}</span></div><div class="cr total"><span>Total costo fijo anual</span><span>${fP(tot)}</span></div><div class="cr total" style="color:#003087"><span>Costo fijo/u. (${fN(f.prodAnual||8000)} u./año)</span><span>${fP(cpu)}</span></div></div>`;}
+
+// ── HISTORIAL ─────────────────────────────────────────────────────────────────
+function renderHistorial(){updSelRec();mostrarHistorial();}
+function mostrarHistorial(){
+  const f=document.getElementById('hist-sel').value;const o=document.getElementById('hist-orden').value;
+  let datos=f?D.historial.filter(h=>h.producto===D.recetas[f]?.nombre):[...D.historial];
+  datos.sort((a,b)=>o==='fecha-desc'?new Date(b.fecha)-new Date(a.fecha)||b.lote.localeCompare(a.lote):o==='fecha-asc'?new Date(a.fecha)-new Date(b.fecha)||a.lote.localeCompare(b.lote):o==='lote-asc'?a.lote.localeCompare(b.lote):b.lote.localeCompare(a.lote));
+  document.getElementById('hist-tabla').innerHTML=datos.length?datos.map(h=>{const d=(h.cdRU||0)-(h.cdT||0);const anS=h.anulado?'style="opacity:0.5;text-decoration:line-through"':'';return`<tr ${anS}><td>${h.fecha}${h.anulado?' <span class="badge critico" style="font-size:10px">ANULADO</span>':'' }</td><td>${h.lote}</td><td>${h.producto}</td><td>${fN(h.u)}</td><td><b>${fP(h.cdRU||0)}</b></td><td>${fP(h.cdT||0)}</td><td><span class="badge ${d>0?'critico':'ok'}">${d>0?'+':''  }${fP(d)}</span></td><td>${fP(h.ps||0)}</td></tr>`;}).join(''):'<tr><td colspan="8" class="empty">Sin historial</td></tr>';
+}
+
+// ── EXPORTACIONES ─────────────────────────────────────────────────────────────
+function csvXls(rows,nombre){const a=document.createElement('a');a.href=URL.createObjectURL(new Blob(['\uFEFF'+rows.map(r=>r.map(c=>`"${String(c??'').replace(/"/g,'""')}"`).join(';')).join('\n')],{type:'text/csv;charset=utf-8;'}));a.download=nombre+'_'+hoy().replace(/\//g,'-')+'.csv';a.click();}
+function exportarInsumos(){const rows=[['Insumo','Categoría','Unidad','Costo actual','Stock','Mínimo','Estado','Proc. previo']];D.insumos.forEach(i=>rows.push([i.nombre,i.cat,i.unidad,i.costo,i.stock,i.min,parseFloat(i.stock)<=0?'Crítico':parseFloat(i.stock)<=parseFloat(i.min)?'Bajo':'OK',i.proc?'Sí':'No']));csvXls(rows,'insumos');}
+function expStock(tipo){const h={prod:['Producto','Tipo','Lote','Unidades','Fecha','Costo/u.','Precio sug.'],dep:['Producto','Tipo','Lote','Unidades','Fecha ingreso','Costo/u.'],ven:['Producto','Lote','Unidades','Precio sug.']};const rows=[h[tipo]];(D.stock[tipo]||[]).filter(i=>i.u>0).forEach(i=>{if(tipo==='prod')rows.push([i.producto,i.tipo,i.lote,i.u,i.fechaProd,i.costoUnit,i.precioSug]);else if(tipo==='dep')rows.push([i.producto,i.tipo,i.lote,i.u,i.fechaDep,i.costoUnit]);else rows.push([i.producto,i.lote,i.u,i.precioSug]);});csvXls(rows,'stock_'+tipo);}
+function exportarMovimientos(){const rows=[['Fecha','Tipo','Producto','Lote','Cantidad']];[...D.movimientos].reverse().forEach(m=>rows.push([m.fecha,m.tipo,m.producto,m.lote,m.cantidad]));csvXls(rows,'movimientos');}
+function expHistorial(){const rows=[['Fecha','Lote','Producto','Unidades','Costo real/u.','Costo teórico/u.','Diferencia','Precio sug.']];D.historial.forEach(h=>rows.push([h.fecha,h.lote,h.producto,h.u,h.cdRU||0,h.cdT||0,(h.cdRU||0)-(h.cdT||0),h.ps||0]));csvXls(rows,'historial');}
+function expCostos(){const idx=document.getElementById('costo-sel').value;if(idx===''){toast('Seleccioná un producto');return;}const rec=D.recetas[idx];const rows=[['Producto',rec.nombre,'',''],['Tipo',rec.tipo,'',''],['','','',''],['INSUMO','Cant./u.','Tipo','Costo teórico']];rec.items.forEach(r=>{const ins=D.insumos[r.insIdx];rows.push([r.nombre,r.cant,r.proc?'Baldes':'Directo',ins?r.cant*(parseFloat(ins.costo)||0):'']);});csvXls(rows,'costo_'+rec.nombre.replace(/\s/g,'_'));}
+function expPlanilla(){if(!D.historial.length){toast('Sin lotes');return;}const rows=[['PLANILLA DE PRODUCCION - CONSERVAS DULCES, ACIDULADAS Y QUESOS','','','','',''],['','','','','','']];D.historial.forEach(h=>{rows.push(['PRODUCTO:',h.producto,'','N° LOTE:',h.lote,'']);rows.push(['MEP A CARGO:',h.mep||'','','FECHA:',h.fecha,'']);rows.push(['Tipo:',h.tipoProd||'','','Envase:',h.envase||'','']);rows.push(['','','','','','']);rows.push(['CANTIDAD TOTAL USADA','INSUMO','COSTO UNITARIO','COSTO TOTAL','','']);(h.consumos||[]).forEach(c=>rows.push([c.cantReal||0,c.nombre,c.costoFinal||0,(c.cantReal||0)*(c.costoFinal||0),'','']));rows.push(['','','','','','']);rows.push(['COSTO TOTAL INSUMOS:','','',h.cdReal||0,'','']);rows.push(['UNIDADES PRODUCIDAS:','',h.u,'','','']);rows.push(['COSTO REAL POR UNIDAD:','','',h.cdRU||0,'','']);rows.push(['COSTO TEÓRICO POR UNIDAD:','','',h.cdT||0,'','']);rows.push(['PRECIO SUGERIDO:','','',h.ps||0,'','']);rows.push(['','','','','','']);rows.push(['FIRMA MEP','','FIRMA JEFE DEL SECTOR','','FIRMA REGENTE TÉCNICO','']);rows.push(['','','','','','']);rows.push(['---','---','---','---','---','---']);rows.push(['','','','','','']);});csvXls(rows,'planilla_produccion');}
+function exportarBaldes(){const rows=[['N°','Insumo','Tipo','Fecha','Peso neto orig.','Disponible','Costo/kg','Estado','Lotes']];(D.baldes||[]).forEach(b=>rows.push([b.numero,b.insNombre,b.tipo,b.fecha,b.pesoNeto,b.disp,b.costNeto||0,b.estado,(b.lotes||[]).join(', ')]));csvXls(rows,'stock_baldes');}
+function exportarDesperdicio(){const rows=[['Fecha','Insumo','Tipo','Bruto (kg)','Neto (kg)','% Desp.','Costo/kg neto','Proveedor']];(D.procesosMP||[]).forEach(p=>rows.push([p.fecha,p.insNombre||'',p.tipo,p.bruto,p.neto,parseFloat(p.desp||0).toFixed(1),p.costNeto||0,p.proveedor||'']));csvXls(rows,'desperdicio');}
+
+// ── INICIO ────────────────────────────────────────────────────────────────────
+async function init(){
+  // ── MIGRACIÓN DE DATOS ───────────────────────────────────────────────────
+  await fetchData();
+  if(!D.insumos || D.insumos.length === 0){
+    D = {"insumos": [{"nombre": "Ciruela", "cat": "Fruta / pulpa", "unidad": "kg", "costo": 4114.29, "stock": 7, "min": 0, "proc": true, "histPrecios": [{"fecha": "2026-02-20", "costo": 0, "motivo": "proceso MP"}, {"fecha": "2026-02-24", "costo": 4054.05, "motivo": "proceso MP"}, {"fecha": "2026-02-20", "costo": 6070.27, "motivo": "proceso MP"}, {"fecha": "2026-02-24", "costo": 4054.05, "motivo": "proceso MP"}]}, {"nombre": "Durazno", "cat": "Fruta / pulpa", "unidad": "kg", "costo": 4379.68, "stock": 25.7, "min": 0, "proc": true, "histPrecios": [{"fecha": "2026-02-20", "costo": 0, "motivo": "proceso MP"}, {"fecha": "2026-02-24", "costo": 4311.35, "motivo": "proceso MP"}, {"fecha": "2026-05-24", "costo": 4301.68, "motivo": "proceso MP"}, {"fecha": "2026-02-24", "costo": 2333.33, "motivo": "proceso MP"}]}, {"nombre": "Azúcar", "cat": "Azúcar", "unidad": "kg", "costo": 1000, "stock": 25, "min": 0, "proc": false, "histPrecios": [{"fecha": "21/5/2026", "costo": 1000, "motivo": "precio inicial"}]}, {"nombre": "Etiquetas", "cat": "Etiquetas", "unidad": "kg", "costo": 208, "stock": 0, "min": 0, "proc": false, "histPrecios": [{"fecha": "21/5/2026", "costo": 208, "motivo": "precio inicial"}]}, {"nombre": "Ácido cítrico", "cat": "Ácidos / conservantes", "unidad": "g", "costo": 85, "stock": 0, "min": 0, "proc": false, "histPrecios": [{"fecha": "21/5/2026", "costo": 85, "motivo": "precio inicial"}]}, {"nombre": "Frasco y tapa", "cat": "Envases", "unidad": "unidad", "costo": 1000, "stock": 0, "min": 0, "proc": false, "histPrecios": [{"fecha": "21/5/2026", "costo": 1000, "motivo": "precio inicial"}]}, {"nombre": "Leche de oveja", "cat": "Leche", "unidad": "litro", "costo": 2000, "stock": 0, "min": 0, "proc": false, "histPrecios": [{"fecha": "2/6/2026", "costo": 2000, "motivo": "precio inicial"}]}, {"nombre": "Bicarbonato de sodio", "cat": "Otro", "unidad": "g", "costo": 4.5, "stock": 4928, "min": 0, "proc": false, "histPrecios": [{"fecha": "2/6/2026", "costo": 4.5, "motivo": "precio inicial"}]}, {"nombre": "Pera", "cat": "Fruta / pulpa", "unidad": "kg", "costo": 2665.98, "stock": 48.3, "min": 0, "proc": true, "histPrecios": [{"fecha": "2026-03-27", "costo": 0, "motivo": "proceso MP"}]}, {"nombre": "Membrillo", "cat": "Fruta / pulpa", "unidad": "kg", "costo": 1873.12, "stock": 0, "min": 0, "proc": true, "histPrecios": [{"fecha": "2026-04-01", "costo": 0, "motivo": "proceso MP"}]}, {"nombre": "Naranja", "cat": "Fruta / pulpa", "unidad": "kg", "costo": 4390.4, "stock": 29.9, "min": 0, "proc": true, "histPrecios": [{"fecha": "2026-04-09", "costo": 0, "motivo": "proceso MP"}, {"fecha": "2026-04-10", "costo": 4440, "motivo": "proceso MP"}]}, {"nombre": "Bandeja plástica", "cat": "Envases", "unidad": "unidad", "costo": 100, "stock": 0, "min": 0, "proc": false, "histPrecios": [{"fecha": "4/6/2026", "costo": 100, "motivo": "precio inicial"}]}, {"nombre": "Bolsas de vacío", "cat": "Bolsas embalaje", "unidad": "unidad", "costo": 1500, "stock": 0, "min": 0, "proc": false, "histPrecios": [{"fecha": "4/6/2026", "costo": 1500, "motivo": "precio inicial"}]}, {"nombre": "Manzana", "cat": "Fruta / pulpa", "unidad": "kg", "costo": 0, "stock": 0, "min": 0, "proc": true, "histPrecios": []}], "recetas": [{"nombre": "Mermelada de Ciruela", "tipo": "Mermelada", "uprod": "frasco 454g", "items": [{"insIdx": 0, "nombre": "Ciruela", "cant": 0.315, "unidad": "kg", "proc": true}, {"insIdx": 2, "nombre": "Azúcar", "cant": 0.22, "unidad": "kg", "proc": false}, {"insIdx": 4, "nombre": "Ácido cítrico", "cant": 0.3, "unidad": "g", "proc": false}, {"insIdx": 5, "nombre": "Frasco y tapa", "cant": 1, "unidad": "unidad", "proc": false}, {"insIdx": 3, "nombre": "Etiquetas", "cant": 1, "unidad": "kg", "proc": false}]}, {"nombre": "Mermelada de Durazno", "tipo": "Mermelada", "uprod": "frasco 454g", "items": [{"insIdx": 1, "nombre": "Durazno", "cant": 0.38, "unidad": "kg", "proc": true}, {"insIdx": 2, "nombre": "Azúcar", "cant": 0.26, "unidad": "kg", "proc": false}, {"insIdx": 4, "nombre": "Ácido cítrico", "cant": 0.7, "unidad": "g", "proc": false}, {"insIdx": 5, "nombre": "Frasco y tapa", "cant": 1, "unidad": "unidad", "proc": false}, {"insIdx": 3, "nombre": "Etiquetas", "cant": 1, "unidad": "kg", "proc": false}]}, {"nombre": "Dulce de leche de Oveja", "tipo": "Dulce de leche", "uprod": "frasco 454g", "items": [{"insIdx": 6, "nombre": "Leche de oveja", "cant": 0.975, "unidad": "litro", "proc": false}, {"insIdx": 2, "nombre": "Azúcar", "cant": 0.225, "unidad": "kg", "proc": false}, {"insIdx": 7, "nombre": "Bicarbonato de sodio", "cant": 2, "unidad": "g", "proc": false}, {"insIdx": 5, "nombre": "Frasco y tapa", "cant": 1, "unidad": "unidad", "proc": false}, {"insIdx": 3, "nombre": "Etiquetas", "cant": 1, "unidad": "kg", "proc": false}]}, {"nombre": "Dulce de Membrillo", "tipo": "Dulce", "uprod": "bandeja 500g", "items": [{"insIdx": 9, "nombre": "Membrillo", "cant": 0.42, "unidad": "kg", "proc": true}, {"insIdx": 2, "nombre": "Azúcar", "cant": 0.333, "unidad": "kg", "proc": false}, {"insIdx": 4, "nombre": "Ácido cítrico", "cant": 0.4, "unidad": "g", "proc": false}, {"insIdx": 11, "nombre": "Bandeja plástica", "cant": 1, "unidad": "unidad", "proc": false}, {"insIdx": 3, "nombre": "Etiquetas", "cant": 1, "unidad": "kg", "proc": false}, {"insIdx": 12, "nombre": "Bolsas de vacío", "cant": 1, "unidad": "unidad", "proc": false}]}, {"nombre": "Mermelada de Pera", "tipo": "Mermelada", "uprod": "frasco 454g", "items": [{"insIdx": 8, "nombre": "Pera", "cant": 0.362, "unidad": "kg", "proc": true}, {"insIdx": 2, "nombre": "Azúcar", "cant": 0.25, "unidad": "kg", "proc": false}, {"insIdx": 4, "nombre": "Ácido cítrico", "cant": 0.58, "unidad": "g", "proc": false}, {"insIdx": 5, "nombre": "Frasco y tapa", "cant": 1, "unidad": "unidad", "proc": false}, {"insIdx": 3, "nombre": "Etiquetas", "cant": 1, "unidad": "kg", "proc": false}]}, {"nombre": "Mermelada de Naranja", "tipo": "Mermelada", "uprod": "frasco 454g", "items": [{"insIdx": 10, "nombre": "Naranja", "cant": 0.35, "unidad": "kg", "proc": true}, {"insIdx": 2, "nombre": "Azúcar", "cant": 0.24, "unidad": "kg", "proc": false}, {"insIdx": 4, "nombre": "Ácido cítrico", "cant": 0.35, "unidad": "g", "proc": false}, {"insIdx": 5, "nombre": "Frasco y tapa", "cant": 1, "unidad": "unidad", "proc": false}, {"insIdx": 3, "nombre": "Etiquetas", "cant": 1, "unidad": "kg", "proc": false}]}, {"nombre": "Mermelada de Manzana", "tipo": "Mermelada", "uprod": "frasco 454g", "items": [{"insIdx": 13, "nombre": "Manzana", "cant": 0.36, "unidad": "kg", "proc": true}, {"insIdx": 2, "nombre": "Azúcar", "cant": 0.25, "unidad": "kg", "proc": false}, {"insIdx": 4, "nombre": "Ácido cítrico", "cant": 0.25, "unidad": "g", "proc": false}, {"insIdx": 5, "nombre": "Frasco y tapa", "cant": 1, "unidad": "unidad", "proc": false}, {"insIdx": 3, "nombre": "Etiquetas", "cant": 1, "unidad": "kg", "proc": false}]}], "lotes": [{"id": 1779366823298, "recIdx": 0, "recNombre": "Mermelada de Ciruela", "tipo": "Mermelada", "lote": "L-AUTO-1", "fecha": "2026-05-21", "mep": "", "tipoProd": "Sin estudiantes", "curso": "", "u": 70, "envase": "frasco 454g", "obs": "", "cdReal": 190534.1, "cdRU": 2721.92, "cdT": 3365.63505, "cf": 0, "ap": 0, "ctR": 2721.92, "ps": 3888.46, "consumos": [{"insIdx": 0, "nombre": "Ciruela", "unidad": "kg", "cantTeorica": 0.315, "cantReal": 22, "costoSnap": 4054.05, "proc": true, "baldesSeleccionados": ["1779365114038.8318", "1779365114038.4934"], "costoFinal": 4054.05}, {"insIdx": 2, "nombre": "Azúcar", "unidad": "kg", "cantTeorica": 0.22, "cantReal": 15, "costoSnap": 1000, "proc": false, "baldesSeleccionados": [], "costoFinal": 1000}, {"insIdx": 4, "nombre": "Ácido cítrico", "unidad": "g", "cantTeorica": 0.3, "cantReal": 21, "costoSnap": 85, "proc": false, "baldesSeleccionados": [], "costoFinal": 85}, {"insIdx": 5, "nombre": "Frasco y tapa", "unidad": "unidad", "cantTeorica": 1, "cantReal": 70, "costoSnap": 1000, "proc": false, "baldesSeleccionados": [], "costoFinal": 1000}, {"insIdx": 3, "nombre": "Etiquetas", "unidad": "kg", "cantTeorica": 1, "cantReal": 70, "costoSnap": 208, "proc": false, "baldesSeleccionados": [], "costoFinal": 208}]}, {"id": 1779367284378, "recIdx": 1, "recNombre": "Mermelada de Durazno", "tipo": "Mermelada", "lote": "260202", "fecha": "2026-02-27", "mep": "Fernando", "tipoProd": "Sin estudiantes", "curso": "", "u": 52, "envase": "frasco 454g", "obs": "", "cdReal": 165581.18, "cdRU": 3184.25, "cdT": 164991.34000000003, "cf": 2250.3, "ap": 0, "ctR": 5434.55, "ps": 7763.64, "consumos": [{"insIdx": 1, "nombre": "Durazno", "unidad": "kg", "cantTeorica": 38, "cantReal": 19.91, "costoSnap": 4304.63, "proc": true, "baldesSeleccionados": ["1779365216412.393", "1779366606626.0967", "1779366606626.2815"], "costoFinal": 4304.63}, {"insIdx": 2, "nombre": "Azúcar", "unidad": "kg", "cantTeorica": 0.26, "cantReal": 14, "costoSnap": 1000, "proc": false, "baldesSeleccionados": [], "costoFinal": 1000}, {"insIdx": 4, "nombre": "Ácido cítrico", "unidad": "g", "cantTeorica": 0.7, "cantReal": 36, "costoSnap": 85, "proc": false, "baldesSeleccionados": [], "costoFinal": 85}, {"insIdx": 5, "nombre": "Frasco y tapa", "unidad": "unidad", "cantTeorica": 1, "cantReal": 52, "costoSnap": 1000, "proc": false, "baldesSeleccionados": [], "costoFinal": 1000}, {"insIdx": 3, "nombre": "Etiquetas", "unidad": "kg", "cantTeorica": 1, "cantReal": 52, "costoSnap": 208, "proc": false, "baldesSeleccionados": [], "costoFinal": 208}]}, {"id": 1780405963432, "recIdx": 0, "recNombre": "Mermelada de Ciruela", "tipo": "Mermelada", "lote": "260301", "fecha": "2026-03-04", "mep": "María Laura", "tipoProd": "Sin estudiantes", "curso": "", "u": 41, "envase": "frasco 454g", "obs": "", "cdReal": 149950.97, "cdRU": 3657.34, "cdT": 2730.52575, "cf": 2562.5, "ap": 0.05, "ctR": 6402.71, "ps": 9146.73, "consumos": [{"insIdx": 0, "nombre": "Ciruela", "unidad": "kg", "cantTeorica": 0.315, "cantReal": 14.7, "costoSnap": 6070.27, "proc": true, "baldesSeleccionados": ["1779365296540.5054", "1779365296540.3523"], "costoFinal": 6070.27}, {"insIdx": 2, "nombre": "Azúcar", "unidad": "kg", "cantTeorica": 0.22, "cantReal": 10, "costoSnap": 1000, "proc": false, "baldesSeleccionados": [], "costoFinal": 1000}, {"insIdx": 4, "nombre": "Ácido cítrico", "unidad": "g", "cantTeorica": 0.3, "cantReal": 14, "costoSnap": 85, "proc": false, "baldesSeleccionados": [], "costoFinal": 85}, {"insIdx": 5, "nombre": "Frasco y tapa", "unidad": "unidad", "cantTeorica": 1, "cantReal": 41, "costoSnap": 1000, "proc": false, "baldesSeleccionados": [], "costoFinal": 1000}, {"insIdx": 3, "nombre": "Etiquetas", "unidad": "kg", "cantTeorica": 1, "cantReal": 41, "costoSnap": 208, "proc": false, "baldesSeleccionados": [], "costoFinal": 208}]}, {"id": 1780406041978, "recIdx": 1, "recNombre": "Mermelada de Durazno", "tipo": "Mermelada", "lote": "260302", "fecha": "2026-03-10", "mep": "María Laura", "tipoProd": "Sin estudiantes", "curso": "", "u": 35, "envase": "frasco 454g", "obs": "", "cdReal": 95968.04000000001, "cdRU": 2741.94, "cdT": 2414.1654, "cf": 2562.5, "ap": 0.05, "ctR": 5441.54, "ps": 7773.63, "consumos": [{"insIdx": 1, "nombre": "Durazno", "unidad": "kg", "cantTeorica": 0.38, "cantReal": 10.4, "costoSnap": 4311.35, "proc": true, "baldesSeleccionados": ["1779365216412.6536", "1779365216412.1743"], "costoFinal": 4311.35}, {"insIdx": 2, "nombre": "Azúcar", "unidad": "kg", "cantTeorica": 0.26, "cantReal": 8, "costoSnap": 1000, "proc": false, "baldesSeleccionados": [], "costoFinal": 1000}, {"insIdx": 4, "nombre": "Ácido cítrico", "unidad": "g", "cantTeorica": 0.7, "cantReal": 10, "costoSnap": 85, "proc": false, "baldesSeleccionados": [], "costoFinal": 85}, {"insIdx": 5, "nombre": "Frasco y tapa", "unidad": "unidad", "cantTeorica": 1, "cantReal": 35, "costoSnap": 1000, "proc": false, "baldesSeleccionados": [], "costoFinal": 1000}, {"insIdx": 3, "nombre": "Etiquetas", "unidad": "kg", "cantTeorica": 1, "cantReal": 35, "costoSnap": 208, "proc": false, "baldesSeleccionados": [], "costoFinal": 208}]}, {"id": 1780408204588, "recIdx": 1, "recNombre": "Mermelada de Durazno", "tipo": "Mermelada", "lote": "260303", "fecha": "2026-03-11", "mep": "", "tipoProd": "Sin estudiantes", "curso": "", "u": 24, "envase": "frasco 454g", "obs": "", "cdReal": 73648.37, "cdRU": 3068.68, "cdT": 3191.7784, "cf": 2562.5, "ap": 0.05, "ctR": 5784.61, "ps": 8263.73, "consumos": [{"insIdx": 1, "nombre": "Durazno", "unidad": "kg", "cantTeorica": 0.38, "cantReal": 8.7, "costoSnap": 4355.33, "proc": true, "baldesSeleccionados": ["1779365216412.0164", "1780406275559.879"], "costoFinal": 4355.33}, {"insIdx": 2, "nombre": "Azúcar", "unidad": "kg", "cantTeorica": 0.26, "cantReal": 6, "costoSnap": 1000, "proc": false, "baldesSeleccionados": [], "costoFinal": 1000}, {"insIdx": 4, "nombre": "Ácido cítrico", "unidad": "g", "cantTeorica": 0.7, "cantReal": 9, "costoSnap": 85, "proc": false, "baldesSeleccionados": [], "costoFinal": 85}, {"insIdx": 5, "nombre": "Frasco y tapa", "unidad": "unidad", "cantTeorica": 1, "cantReal": 24, "costoSnap": 1000, "proc": false, "baldesSeleccionados": [], "costoFinal": 1000}, {"insIdx": 3, "nombre": "Etiquetas", "unidad": "kg", "cantTeorica": 1, "cantReal": 24, "costoSnap": 208, "proc": false, "baldesSeleccionados": [], "costoFinal": 208}]}, {"id": 1780409024933, "recIdx": 2, "recNombre": "Dulce de leche de Oveja", "tipo": "Dulce de leche", "lote": "260304", "fecha": "2026-03-12", "mep": "Leo", "tipoProd": "Sin estudiantes", "curso": "", "u": 18, "envase": "frasco 454g", "obs": "", "cdReal": 39162, "cdRU": 2175.67, "cdT": 3392, "cf": 2562.5, "ap": 0.05, "ctR": 4846.95, "ps": 6924.21, "consumos": [{"insIdx": 6, "nombre": "Leche de oveja", "unidad": "litro", "cantTeorica": 0.975, "cantReal": 17.5, "costoSnap": 2000, "proc": false, "baldesSeleccionados": [], "costoFinal": 2000}, {"insIdx": 2, "nombre": "Azúcar", "unidad": "kg", "cantTeorica": 0.225, "cantReal": 4, "costoSnap": 1000, "proc": false, "baldesSeleccionados": [], "costoFinal": 1000}, {"insIdx": 7, "nombre": "Bicarbonato de sodio", "unidad": "g", "cantTeorica": 2, "cantReal": 36, "costoSnap": 4.5, "proc": false, "baldesSeleccionados": [], "costoFinal": 4.5}]}, {"id": 1780409090131, "recIdx": 2, "recNombre": "Dulce de leche de Oveja", "tipo": "Dulce de leche", "lote": "260305", "fecha": "2026-03-17", "mep": "María Laura", "tipoProd": "Sin estudiantes", "curso": "", "u": 20, "envase": "frasco 454g", "obs": "", "cdReal": 63322, "cdRU": 3166.1, "cdT": 3392, "cf": 2562.5, "ap": 0.05, "ctR": 5886.91, "ps": 8409.87, "consumos": [{"insIdx": 6, "nombre": "Leche de oveja", "unidad": "litro", "cantTeorica": 0.975, "cantReal": 17.5, "costoSnap": 2000, "proc": false, "baldesSeleccionados": [], "costoFinal": 2000}, {"insIdx": 2, "nombre": "Azúcar", "unidad": "kg", "cantTeorica": 0.225, "cantReal": 4, "costoSnap": 1000, "proc": false, "baldesSeleccionados": [], "costoFinal": 1000}, {"insIdx": 7, "nombre": "Bicarbonato de sodio", "unidad": "g", "cantTeorica": 2, "cantReal": 36, "costoSnap": 4.5, "proc": false, "baldesSeleccionados": [], "costoFinal": 4.5}, {"insIdx": 5, "nombre": "Frasco y tapa", "unidad": "unidad", "cantTeorica": 1, "cantReal": 20, "costoSnap": 1000, "proc": false, "baldesSeleccionados": [], "costoFinal": 1000}, {"insIdx": 3, "nombre": "Etiquetas", "unidad": "kg", "cantTeorica": 1, "cantReal": 20, "costoSnap": 208, "proc": false, "baldesSeleccionados": [], "costoFinal": 208}]}, {"id": 1780571713894, "recIdx": 0, "recNombre": "Mermelada de Ciruela", "tipo": "Mermelada", "lote": "260201", "fecha": "2026-02-26", "mep": "Leo", "tipoProd": "Sin estudiantes", "curso": "", "u": 70, "envase": "frasco 454g", "obs": "", "cdReal": 190961.56, "cdRU": 2728.02, "cdT": 2749.50135, "cf": 2562.5, "ap": 0.05, "ctR": 5426.92, "ps": 7752.74, "consumos": [{"insIdx": 0, "nombre": "Ciruela", "unidad": "kg", "cantTeorica": 0.315, "cantReal": 22, "costoSnap": 4073.48, "proc": true, "baldesSeleccionados": ["1779365114038.8318", "1779365114038.4934", "1780571591282.4507"], "costoFinal": 4073.48}, {"insIdx": 2, "nombre": "Azúcar", "unidad": "kg", "cantTeorica": 0.22, "cantReal": 15, "costoSnap": 1000, "proc": false, "baldesSeleccionados": [], "costoFinal": 1000}, {"insIdx": 4, "nombre": "Ácido cítrico", "unidad": "g", "cantTeorica": 0.3, "cantReal": 21, "costoSnap": 85, "proc": false, "baldesSeleccionados": [], "costoFinal": 85}, {"insIdx": 5, "nombre": "Frasco y tapa", "unidad": "unidad", "cantTeorica": 1, "cantReal": 70, "costoSnap": 1000, "proc": false, "baldesSeleccionados": [], "costoFinal": 1000}, {"insIdx": 3, "nombre": "Etiquetas", "unidad": "kg", "cantTeorica": 1, "cantReal": 70, "costoSnap": 208, "proc": false, "baldesSeleccionados": [], "costoFinal": 208}]}, {"id": 1780572010060, "recIdx": 2, "recNombre": "Dulce de leche de Oveja", "tipo": "Dulce de leche", "lote": "260304", "fecha": "2026-03-12", "mep": "Leo", "tipoProd": "Sin estudiantes", "curso": "", "u": 18, "envase": "frasco 454g", "obs": "", "cdReal": 60906, "cdRU": 3383.67, "cdT": 3392, "cf": 2562.5, "ap": 0.05, "ctR": 6115.35, "ps": 8736.21, "consumos": [{"insIdx": 6, "nombre": "Leche de oveja", "unidad": "litro", "cantTeorica": 0.975, "cantReal": 17.5, "costoSnap": 2000, "proc": false, "baldesSeleccionados": [], "costoFinal": 2000}, {"insIdx": 2, "nombre": "Azúcar", "unidad": "kg", "cantTeorica": 0.225, "cantReal": 4, "costoSnap": 1000, "proc": false, "baldesSeleccionados": [], "costoFinal": 1000}, {"insIdx": 7, "nombre": "Bicarbonato de sodio", "unidad": "g", "cantTeorica": 2, "cantReal": 36, "costoSnap": 4.5, "proc": false, "baldesSeleccionados": [], "costoFinal": 4.5}, {"insIdx": 5, "nombre": "Frasco y tapa", "unidad": "unidad", "cantTeorica": 1, "cantReal": 18, "costoSnap": 1000, "proc": false, "baldesSeleccionados": [], "costoFinal": 1000}, {"insIdx": 3, "nombre": "Etiquetas", "unidad": "kg", "cantTeorica": 1, "cantReal": 18, "costoSnap": 208, "proc": false, "baldesSeleccionados": [], "costoFinal": 208}]}, {"id": 1780573828151, "recIdx": 3, "recNombre": "Dulce de Membrillo", "tipo": "Dulce", "lote": "260401", "fecha": "2026-04-07", "mep": "María Laura", "tipoProd": "Sin estudiantes", "curso": "", "u": 42, "envase": "bandeja 500g", "obs": "", "cdReal": 124347.91, "cdRU": 2960.66, "cdT": 2961.7104, "cf": 2562.5, "ap": 0.05, "ctR": 5671.19, "ps": 8101.7, "consumos": [{"insIdx": 9, "nombre": "Membrillo", "unidad": "kg", "cantTeorica": 0.42, "cantReal": 17.6, "costoSnap": 1873.12, "proc": true, "baldesSeleccionados": ["1779365216412.393", "1779646949988.6892"], "costoFinal": 1873.12}, {"insIdx": 2, "nombre": "Azúcar", "unidad": "kg", "cantTeorica": 0.333, "cantReal": 14, "costoSnap": 1000, "proc": false, "baldesSeleccionados": [], "costoFinal": 1000}, {"insIdx": 4, "nombre": "Ácido cítrico", "unidad": "g", "cantTeorica": 0.4, "cantReal": 17, "costoSnap": 85, "proc": false, "baldesSeleccionados": [], "costoFinal": 85}, {"insIdx": 11, "nombre": "Bandeja plástica", "unidad": "unidad", "cantTeorica": 1, "cantReal": 42, "costoSnap": 100, "proc": false, "baldesSeleccionados": [], "costoFinal": 100}, {"insIdx": 3, "nombre": "Etiquetas", "unidad": "kg", "cantTeorica": 1, "cantReal": 42, "costoSnap": 208, "proc": false, "baldesSeleccionados": [], "costoFinal": 208}, {"insIdx": 12, "nombre": "Bolsas de vacío", "unidad": "unidad", "cantTeorica": 1, "cantReal": 42, "costoSnap": 1500, "proc": false, "baldesSeleccionados": [], "costoFinal": 1500}]}], "ventas": [], "stock": {"prod": [{"loteId": 1779367284378, "lote": "260202", "producto": "Mermelada de Durazno", "tipo": "Mermelada", "u": 0, "fechaProd": "2026-02-27", "costoUnit": 5434.55, "precioSug": 7763.64}, {"loteId": 1780405963432, "lote": "260301", "producto": "Mermelada de Ciruela", "tipo": "Mermelada", "u": 0, "fechaProd": "2026-03-04", "costoUnit": 6402.71, "precioSug": 9146.73}, {"loteId": 1780406041978, "lote": "260302", "producto": "Mermelada de Durazno", "tipo": "Mermelada", "u": 35, "fechaProd": "2026-03-10", "costoUnit": 5441.54, "precioSug": 7773.63}, {"loteId": 1780408204588, "lote": "260303", "producto": "Mermelada de Durazno", "tipo": "Mermelada", "u": 24, "fechaProd": "2026-03-11", "costoUnit": 5784.61, "precioSug": 8263.73}, {"loteId": 1780409090131, "lote": "260305", "producto": "Dulce de leche de Oveja", "tipo": "Dulce de leche", "u": 20, "fechaProd": "2026-03-17", "costoUnit": 5886.91, "precioSug": 8409.87}, {"loteId": 1780571713894, "lote": "260201", "producto": "Mermelada de Ciruela", "tipo": "Mermelada", "u": 0, "fechaProd": "2026-02-26", "costoUnit": 5426.92, "precioSug": 7752.74}, {"loteId": 1780572010060, "lote": "260304", "producto": "Dulce de leche de Oveja", "tipo": "Dulce de leche", "u": 18, "fechaProd": "2026-03-12", "costoUnit": 6115.35, "precioSug": 8736.21}, {"loteId": 1780573828151, "lote": "260401", "producto": "Dulce de Membrillo", "tipo": "Dulce", "u": 42, "fechaProd": "2026-04-07", "costoUnit": 5671.19, "precioSug": 8101.7}], "dep": [{"loteId": 1779367284378, "lote": "260202", "producto": "Mermelada de Durazno", "tipo": "Mermelada", "u": 52, "fechaProd": "2026-02-27", "costoUnit": 5434.55, "precioSug": 7763.64, "fechaDep": "4/6/2026"}, {"loteId": 1780405963432, "lote": "260301", "producto": "Mermelada de Ciruela", "tipo": "Mermelada", "u": 41, "fechaProd": "2026-03-04", "costoUnit": 6402.71, "precioSug": 9146.73, "fechaDep": "4/6/2026"}, {"loteId": 1780571713894, "lote": "260201", "producto": "Mermelada de Ciruela", "tipo": "Mermelada", "u": 70, "fechaProd": "2026-02-26", "costoUnit": 5426.92, "precioSug": 7752.74, "fechaDep": "4/6/2026"}], "ven": []}, "movimientos": [{"tipo": "Procesamiento MP", "producto": "Ciruela", "lote": "—", "cantidad": 14.8, "fecha": "21/5/2026"}, {"tipo": "Procesamiento MP", "producto": "Durazno", "lote": "—", "cantidad": 18.5, "fecha": "21/5/2026"}, {"tipo": "Procesamiento MP", "producto": "Ciruela", "lote": "—", "cantidad": 14.8, "fecha": "21/5/2026"}, {"tipo": "Procesamiento MP", "producto": "Durazno", "lote": "—", "cantidad": 17.1, "fecha": "21/5/2026"}, {"tipo": "Procesamiento MP", "producto": "Durazno", "lote": "—", "cantidad": 17.1, "fecha": "21/5/2026"}, {"tipo": "Producción → Almacén Prod.", "producto": "Mermelada de Ciruela", "lote": "L-AUTO-1", "cantidad": 70, "fecha": "21/5/2026"}, {"tipo": "Producción → Almacén Prod.", "producto": "Mermelada de Durazno", "lote": "260202", "cantidad": 52, "fecha": "21/5/2026"}, {"tipo": "Procesamiento MP", "producto": "Durazno", "lote": "—", "cantidad": 12, "fecha": "24/5/2026"}, {"tipo": "Procesamiento MP", "producto": "Durazno", "lote": "—", "cantidad": 12, "fecha": "24/5/2026"}, {"tipo": "Procesamiento MP", "producto": "Ciruela", "lote": "—", "cantidad": 14.8, "fecha": "2/6/2026"}, {"tipo": "Producción → Almacén Prod.", "producto": "Mermelada de Ciruela", "lote": "260301", "cantidad": 41, "fecha": "2/6/2026"}, {"tipo": "Producción → Almacén Prod.", "producto": "Mermelada de Durazno", "lote": "260302", "cantidad": 35, "fecha": "2/6/2026"}, {"tipo": "Procesamiento MP", "producto": "Durazno", "lote": "—", "cantidad": 5.6, "fecha": "2/6/2026"}, {"tipo": "Producción → Almacén Prod.", "producto": "Mermelada de Durazno", "lote": "260303", "cantidad": 24, "fecha": "2/6/2026"}, {"tipo": "Producción → Almacén Prod.", "producto": "Dulce de leche de Oveja", "lote": "260304", "cantidad": 18, "fecha": "2/6/2026"}, {"tipo": "Producción → Almacén Prod.", "producto": "Dulce de leche de Oveja", "lote": "260305", "cantidad": 20, "fecha": "2/6/2026"}, {"tipo": "⚠ Anulación de lote", "producto": "Mermelada de Ciruela", "lote": "L-AUTO-1", "cantidad": 70, "fecha": "4/6/2026"}, {"tipo": "Procesamiento MP", "producto": "Ciruela", "lote": "—", "cantidad": 7, "fecha": "4/6/2026"}, {"tipo": "Producción → Almacén Prod.", "producto": "Mermelada de Ciruela", "lote": "260201", "cantidad": 70, "fecha": "4/6/2026"}, {"tipo": "⚠ Anulación de lote", "producto": "Dulce de leche de Oveja", "lote": "260304", "cantidad": 18, "fecha": "4/6/2026"}, {"tipo": "Producción → Almacén Prod.", "producto": "Dulce de leche de Oveja", "lote": "260304", "cantidad": 18, "fecha": "4/6/2026"}, {"tipo": "Procesamiento MP", "producto": "Pera", "lote": "—", "cantidad": 48.3, "fecha": "4/6/2026"}, {"tipo": "Procesamiento MP", "producto": "Membrillo", "lote": "—", "cantidad": 17.9, "fecha": "4/6/2026"}, {"tipo": "Producción → Almacén Prod.", "producto": "Dulce de Membrillo", "lote": "260401", "cantidad": 42, "fecha": "4/6/2026"}, {"tipo": "Procesamiento MP", "producto": "Naranja", "lote": "—", "cantidad": 22.4, "fecha": "4/6/2026"}, {"tipo": "Procesamiento MP", "producto": "Naranja", "lote": "—", "cantidad": 7.5, "fecha": "4/6/2026"}, {"tipo": "Producción → Depósito", "producto": "Mermelada de Durazno", "lote": "260202", "cantidad": 52, "fecha": "4/6/2026"}, {"tipo": "Producción → Depósito", "producto": "Mermelada de Ciruela", "lote": "260301", "cantidad": 41, "fecha": "4/6/2026"}, {"tipo": "Producción → Depósito", "producto": "Mermelada de Ciruela", "lote": "260201", "cantidad": 70, "fecha": "4/6/2026"}], "historial": [{"fecha": "2026-05-21", "lote": "L-AUTO-1", "producto": "Mermelada de Ciruela", "u": 70, "cdReal": 190534.1, "cdRU": 2721.92, "cdT": 3365.63505, "cf": 0, "ctR": 2721.92, "ps": 3888.46, "mep": "", "tipo": "Mermelada", "envase": "frasco 454g", "consumos": [{"insIdx": 0, "nombre": "Ciruela", "unidad": "kg", "cantTeorica": 0.315, "cantReal": 22, "costoSnap": 4054.05, "proc": true, "baldesSeleccionados": ["1779365114038.8318", "1779365114038.4934"], "costoFinal": 4054.05}, {"insIdx": 2, "nombre": "Azúcar", "unidad": "kg", "cantTeorica": 0.22, "cantReal": 15, "costoSnap": 1000, "proc": false, "baldesSeleccionados": [], "costoFinal": 1000}, {"insIdx": 4, "nombre": "Ácido cítrico", "unidad": "g", "cantTeorica": 0.3, "cantReal": 21, "costoSnap": 85, "proc": false, "baldesSeleccionados": [], "costoFinal": 85}, {"insIdx": 5, "nombre": "Frasco y tapa", "unidad": "unidad", "cantTeorica": 1, "cantReal": 70, "costoSnap": 1000, "proc": false, "baldesSeleccionados": [], "costoFinal": 1000}, {"insIdx": 3, "nombre": "Etiquetas", "unidad": "kg", "cantTeorica": 1, "cantReal": 70, "costoSnap": 208, "proc": false, "baldesSeleccionados": [], "costoFinal": 208}], "anulado": true}, {"fecha": "2026-02-27", "lote": "260202", "producto": "Mermelada de Durazno", "u": 52, "cdReal": 165581.18, "cdRU": 3184.25, "cdT": 164991.34000000003, "cf": 2250.3, "ctR": 5434.55, "ps": 7763.64, "mep": "Fernando", "tipo": "Mermelada", "envase": "frasco 454g", "consumos": [{"insIdx": 1, "nombre": "Durazno", "unidad": "kg", "cantTeorica": 38, "cantReal": 19.91, "costoSnap": 4304.63, "proc": true, "baldesSeleccionados": ["1779365216412.393", "1779366606626.0967", "1779366606626.2815"], "costoFinal": 4304.63}, {"insIdx": 2, "nombre": "Azúcar", "unidad": "kg", "cantTeorica": 0.26, "cantReal": 14, "costoSnap": 1000, "proc": false, "baldesSeleccionados": [], "costoFinal": 1000}, {"insIdx": 4, "nombre": "Ácido cítrico", "unidad": "g", "cantTeorica": 0.7, "cantReal": 36, "costoSnap": 85, "proc": false, "baldesSeleccionados": [], "costoFinal": 85}, {"insIdx": 5, "nombre": "Frasco y tapa", "unidad": "unidad", "cantTeorica": 1, "cantReal": 52, "costoSnap": 1000, "proc": false, "baldesSeleccionados": [], "costoFinal": 1000}, {"insIdx": 3, "nombre": "Etiquetas", "unidad": "kg", "cantTeorica": 1, "cantReal": 52, "costoSnap": 208, "proc": false, "baldesSeleccionados": [], "costoFinal": 208}]}, {"fecha": "2026-03-04", "lote": "260301", "producto": "Mermelada de Ciruela", "u": 41, "cdReal": 149950.97, "cdRU": 3657.34, "cdT": 2730.52575, "cf": 2562.5, "ctR": 6402.71, "ps": 9146.73, "mep": "María Laura", "tipo": "Mermelada", "envase": "frasco 454g", "consumos": [{"insIdx": 0, "nombre": "Ciruela", "unidad": "kg", "cantTeorica": 0.315, "cantReal": 14.7, "costoSnap": 6070.27, "proc": true, "baldesSeleccionados": ["1779365296540.5054", "1779365296540.3523"], "costoFinal": 6070.27}, {"insIdx": 2, "nombre": "Azúcar", "unidad": "kg", "cantTeorica": 0.22, "cantReal": 10, "costoSnap": 1000, "proc": false, "baldesSeleccionados": [], "costoFinal": 1000}, {"insIdx": 4, "nombre": "Ácido cítrico", "unidad": "g", "cantTeorica": 0.3, "cantReal": 14, "costoSnap": 85, "proc": false, "baldesSeleccionados": [], "costoFinal": 85}, {"insIdx": 5, "nombre": "Frasco y tapa", "unidad": "unidad", "cantTeorica": 1, "cantReal": 41, "costoSnap": 1000, "proc": false, "baldesSeleccionados": [], "costoFinal": 1000}, {"insIdx": 3, "nombre": "Etiquetas", "unidad": "kg", "cantTeorica": 1, "cantReal": 41, "costoSnap": 208, "proc": false, "baldesSeleccionados": [], "costoFinal": 208}]}, {"fecha": "2026-03-10", "lote": "260302", "producto": "Mermelada de Durazno", "u": 35, "cdReal": 95968.04000000001, "cdRU": 2741.94, "cdT": 2414.1654, "cf": 2562.5, "ctR": 5441.54, "ps": 7773.63, "mep": "María Laura", "tipo": "Mermelada", "envase": "frasco 454g", "consumos": [{"insIdx": 1, "nombre": "Durazno", "unidad": "kg", "cantTeorica": 0.38, "cantReal": 10.4, "costoSnap": 4311.35, "proc": true, "baldesSeleccionados": ["1779365216412.6536", "1779365216412.1743"], "costoFinal": 4311.35}, {"insIdx": 2, "nombre": "Azúcar", "unidad": "kg", "cantTeorica": 0.26, "cantReal": 8, "costoSnap": 1000, "proc": false, "baldesSeleccionados": [], "costoFinal": 1000}, {"insIdx": 4, "nombre": "Ácido cítrico", "unidad": "g", "cantTeorica": 0.7, "cantReal": 10, "costoSnap": 85, "proc": false, "baldesSeleccionados": [], "costoFinal": 85}, {"insIdx": 5, "nombre": "Frasco y tapa", "unidad": "unidad", "cantTeorica": 1, "cantReal": 35, "costoSnap": 1000, "proc": false, "baldesSeleccionados": [], "costoFinal": 1000}, {"insIdx": 3, "nombre": "Etiquetas", "unidad": "kg", "cantTeorica": 1, "cantReal": 35, "costoSnap": 208, "proc": false, "baldesSeleccionados": [], "costoFinal": 208}]}, {"fecha": "2026-03-11", "lote": "260303", "producto": "Mermelada de Durazno", "u": 24, "cdReal": 73648.37, "cdRU": 3068.68, "cdT": 3191.7784, "cf": 2562.5, "ctR": 5784.61, "ps": 8263.73, "mep": "", "tipo": "Mermelada", "envase": "frasco 454g", "consumos": [{"insIdx": 1, "nombre": "Durazno", "unidad": "kg", "cantTeorica": 0.38, "cantReal": 8.7, "costoSnap": 4355.33, "proc": true, "baldesSeleccionados": ["1779365216412.0164", "1780406275559.879"], "costoFinal": 4355.33}, {"insIdx": 2, "nombre": "Azúcar", "unidad": "kg", "cantTeorica": 0.26, "cantReal": 6, "costoSnap": 1000, "proc": false, "baldesSeleccionados": [], "costoFinal": 1000}, {"insIdx": 4, "nombre": "Ácido cítrico", "unidad": "g", "cantTeorica": 0.7, "cantReal": 9, "costoSnap": 85, "proc": false, "baldesSeleccionados": [], "costoFinal": 85}, {"insIdx": 5, "nombre": "Frasco y tapa", "unidad": "unidad", "cantTeorica": 1, "cantReal": 24, "costoSnap": 1000, "proc": false, "baldesSeleccionados": [], "costoFinal": 1000}, {"insIdx": 3, "nombre": "Etiquetas", "unidad": "kg", "cantTeorica": 1, "cantReal": 24, "costoSnap": 208, "proc": false, "baldesSeleccionados": [], "costoFinal": 208}]}, {"fecha": "2026-03-12", "lote": "260304", "producto": "Dulce de leche de Oveja", "u": 18, "cdReal": 39162, "cdRU": 2175.67, "cdT": 3392, "cf": 2562.5, "ctR": 4846.95, "ps": 6924.21, "mep": "Leo", "tipo": "Dulce de leche", "envase": "frasco 454g", "consumos": [{"insIdx": 6, "nombre": "Leche de oveja", "unidad": "litro", "cantTeorica": 0.975, "cantReal": 17.5, "costoSnap": 2000, "proc": false, "baldesSeleccionados": [], "costoFinal": 2000}, {"insIdx": 2, "nombre": "Azúcar", "unidad": "kg", "cantTeorica": 0.225, "cantReal": 4, "costoSnap": 1000, "proc": false, "baldesSeleccionados": [], "costoFinal": 1000}, {"insIdx": 7, "nombre": "Bicarbonato de sodio", "unidad": "g", "cantTeorica": 2, "cantReal": 36, "costoSnap": 4.5, "proc": false, "baldesSeleccionados": [], "costoFinal": 4.5}], "anulado": true}, {"fecha": "2026-03-17", "lote": "260305", "producto": "Dulce de leche de Oveja", "u": 20, "cdReal": 63322, "cdRU": 3166.1, "cdT": 3392, "cf": 2562.5, "ctR": 5886.91, "ps": 8409.87, "mep": "María Laura", "tipo": "Dulce de leche", "envase": "frasco 454g", "consumos": [{"insIdx": 6, "nombre": "Leche de oveja", "unidad": "litro", "cantTeorica": 0.975, "cantReal": 17.5, "costoSnap": 2000, "proc": false, "baldesSeleccionados": [], "costoFinal": 2000}, {"insIdx": 2, "nombre": "Azúcar", "unidad": "kg", "cantTeorica": 0.225, "cantReal": 4, "costoSnap": 1000, "proc": false, "baldesSeleccionados": [], "costoFinal": 1000}, {"insIdx": 7, "nombre": "Bicarbonato de sodio", "unidad": "g", "cantTeorica": 2, "cantReal": 36, "costoSnap": 4.5, "proc": false, "baldesSeleccionados": [], "costoFinal": 4.5}, {"insIdx": 5, "nombre": "Frasco y tapa", "unidad": "unidad", "cantTeorica": 1, "cantReal": 20, "costoSnap": 1000, "proc": false, "baldesSeleccionados": [], "costoFinal": 1000}, {"insIdx": 3, "nombre": "Etiquetas", "unidad": "kg", "cantTeorica": 1, "cantReal": 20, "costoSnap": 208, "proc": false, "baldesSeleccionados": [], "costoFinal": 208}]}, {"fecha": "2026-02-26", "lote": "260201", "producto": "Mermelada de Ciruela", "u": 70, "cdReal": 190961.56, "cdRU": 2728.02, "cdT": 2749.50135, "cf": 2562.5, "ctR": 5426.92, "ps": 7752.74, "mep": "Leo", "tipo": "Mermelada", "envase": "frasco 454g", "consumos": [{"insIdx": 0, "nombre": "Ciruela", "unidad": "kg", "cantTeorica": 0.315, "cantReal": 22, "costoSnap": 4073.48, "proc": true, "baldesSeleccionados": ["1779365114038.8318", "1779365114038.4934", "1780571591282.4507"], "costoFinal": 4073.48}, {"insIdx": 2, "nombre": "Azúcar", "unidad": "kg", "cantTeorica": 0.22, "cantReal": 15, "costoSnap": 1000, "proc": false, "baldesSeleccionados": [], "costoFinal": 1000}, {"insIdx": 4, "nombre": "Ácido cítrico", "unidad": "g", "cantTeorica": 0.3, "cantReal": 21, "costoSnap": 85, "proc": false, "baldesSeleccionados": [], "costoFinal": 85}, {"insIdx": 5, "nombre": "Frasco y tapa", "unidad": "unidad", "cantTeorica": 1, "cantReal": 70, "costoSnap": 1000, "proc": false, "baldesSeleccionados": [], "costoFinal": 1000}, {"insIdx": 3, "nombre": "Etiquetas", "unidad": "kg", "cantTeorica": 1, "cantReal": 70, "costoSnap": 208, "proc": false, "baldesSeleccionados": [], "costoFinal": 208}]}, {"fecha": "2026-03-12", "lote": "260304", "producto": "Dulce de leche de Oveja", "u": 18, "cdReal": 60906, "cdRU": 3383.67, "cdT": 3392, "cf": 2562.5, "ctR": 6115.35, "ps": 8736.21, "mep": "Leo", "tipo": "Dulce de leche", "envase": "frasco 454g", "consumos": [{"insIdx": 6, "nombre": "Leche de oveja", "unidad": "litro", "cantTeorica": 0.975, "cantReal": 17.5, "costoSnap": 2000, "proc": false, "baldesSeleccionados": [], "costoFinal": 2000}, {"insIdx": 2, "nombre": "Azúcar", "unidad": "kg", "cantTeorica": 0.225, "cantReal": 4, "costoSnap": 1000, "proc": false, "baldesSeleccionados": [], "costoFinal": 1000}, {"insIdx": 7, "nombre": "Bicarbonato de sodio", "unidad": "g", "cantTeorica": 2, "cantReal": 36, "costoSnap": 4.5, "proc": false, "baldesSeleccionados": [], "costoFinal": 4.5}, {"insIdx": 5, "nombre": "Frasco y tapa", "unidad": "unidad", "cantTeorica": 1, "cantReal": 18, "costoSnap": 1000, "proc": false, "baldesSeleccionados": [], "costoFinal": 1000}, {"insIdx": 3, "nombre": "Etiquetas", "unidad": "kg", "cantTeorica": 1, "cantReal": 18, "costoSnap": 208, "proc": false, "baldesSeleccionados": [], "costoFinal": 208}]}, {"fecha": "2026-04-07", "lote": "260401", "producto": "Dulce de Membrillo", "u": 42, "cdReal": 124347.91, "cdRU": 2960.66, "cdT": 2961.7104, "cf": 2562.5, "ctR": 5671.19, "ps": 8101.7, "mep": "María Laura", "tipo": "Dulce", "envase": "bandeja 500g", "consumos": [{"insIdx": 9, "nombre": "Membrillo", "unidad": "kg", "cantTeorica": 0.42, "cantReal": 17.6, "costoSnap": 1873.12, "proc": true, "baldesSeleccionados": ["1779365216412.393", "1779646949988.6892"], "costoFinal": 1873.12}, {"insIdx": 2, "nombre": "Azúcar", "unidad": "kg", "cantTeorica": 0.333, "cantReal": 14, "costoSnap": 1000, "proc": false, "baldesSeleccionados": [], "costoFinal": 1000}, {"insIdx": 4, "nombre": "Ácido cítrico", "unidad": "g", "cantTeorica": 0.4, "cantReal": 17, "costoSnap": 85, "proc": false, "baldesSeleccionados": [], "costoFinal": 85}, {"insIdx": 11, "nombre": "Bandeja plástica", "unidad": "unidad", "cantTeorica": 1, "cantReal": 42, "costoSnap": 100, "proc": false, "baldesSeleccionados": [], "costoFinal": 100}, {"insIdx": 3, "nombre": "Etiquetas", "unidad": "kg", "cantTeorica": 1, "cantReal": 42, "costoSnap": 208, "proc": false, "baldesSeleccionados": [], "costoFinal": 208}, {"insIdx": 12, "nombre": "Bolsas de vacío", "unidad": "unidad", "cantTeorica": 1, "cantReal": 42, "costoSnap": 1500, "proc": false, "baldesSeleccionados": [], "costoFinal": 1500}]}], "baldes": [{"id": 1779365114038.8318, "numero": 15, "insNombre": "Naranja", "tipo": "Fruta", "fecha": "2026-04-09", "pesoNeto": 7.6, "disp": 7.6, "estado": "lleno", "proveedor": "El rabanito loco dos", "costNeto": 4440, "lotes": []}, {"id": 1779365114038.4934, "numero": 13, "insNombre": "Naranja", "tipo": "Fruta", "fecha": "2026-04-09", "pesoNeto": 7.535, "disp": 7.535, "estado": "lleno", "proveedor": "El rabanito loco dos", "costNeto": 4440, "lotes": []}, {"id": 1779365216412.393, "numero": 3, "insNombre": "Naranja", "tipo": "Fruta", "fecha": "2026-04-09", "pesoNeto": 7.255, "disp": 7.255, "estado": "lleno", "proveedor": "El rabanito loco dos", "costNeto": 4440, "lotes": []}, {"id": 1779365216412.6536, "numero": 5, "insNombre": "Pera", "tipo": "Fruta", "fecha": "2026-03-27", "pesoNeto": 6.15, "disp": 6.15, "estado": "lleno", "proveedor": "El rabanito loco dos", "costNeto": 2665.98, "lotes": []}, {"id": 1779365216412.1743, "numero": 2, "insNombre": "Pera", "tipo": "Fruta", "fecha": "2026-03-27", "pesoNeto": 6.15, "disp": 6.15, "estado": "lleno", "proveedor": "El rabanito loco dos", "costNeto": 2665.98, "lotes": []}, {"id": 1779365216412.0164, "numero": 12, "insNombre": "Pera", "tipo": "Fruta", "fecha": "2026-03-27", "pesoNeto": 5.25, "disp": 5.25, "estado": "lleno", "proveedor": "El rabanito loco dos", "costNeto": 2665.98, "lotes": []}, {"id": 1779365296540.5054, "numero": 14, "insNombre": "Pera", "tipo": "Fruta", "fecha": "2026-03-27", "pesoNeto": 6.15, "disp": 6.15, "estado": "lleno", "proveedor": "El rabanito loco dos", "costNeto": 2665.98, "lotes": []}, {"id": 1779365296540.3523, "numero": 17, "insNombre": "Pera", "tipo": "Fruta", "fecha": "2026-03-27", "pesoNeto": 6.15, "disp": 6.15, "estado": "lleno", "proveedor": "El rabanito loco dos", "costNeto": 2665.98, "lotes": []}, {"id": 1779366606626.0967, "numero": 7, "insNombre": "Pera", "tipo": "Fruta", "fecha": "2026-03-27", "pesoNeto": 6.15, "disp": 6.15, "estado": "lleno", "proveedor": "El rabanito loco dos", "costNeto": 2665.98, "lotes": []}, {"id": 1779366606626.2815, "numero": 20, "insNombre": "Pera", "tipo": "Fruta", "fecha": "2026-03-27", "pesoNeto": 6.15, "disp": 6.15, "estado": "lleno", "proveedor": "El rabanito loco dos", "costNeto": 2665.98, "lotes": []}, {"id": 1779646949988.6892, "numero": 16, "insNombre": "Membrillo", "tipo": "Fruta", "fecha": "2026-04-01", "pesoNeto": 8.8665, "disp": 0, "estado": "vacio", "proveedor": "El rabanito loco dos", "costNeto": 1873.12, "lotes": ["260401"]}, {"id": 1780398751887.1924, "numero": 15, "insNombre": "Ciruela", "tipo": "Fruta", "fecha": "2026-02-20", "pesoNeto": 7.35, "disp": 0, "estado": "vacio", "proveedor": "El rabanito loco dos", "costNeto": 4054.05, "lotes": []}, {"id": 1780398751887.312, "numero": 13, "insNombre": "Ciruela", "tipo": "Fruta", "fecha": "2026-02-20", "pesoNeto": 7.41, "disp": 0, "estado": "vacio", "proveedor": "El rabanito loco dos", "costNeto": 4054.05, "lotes": []}, {"id": 1780406275559.879, "numero": 16, "insNombre": "Durazno", "tipo": "Fruta", "fecha": "2026-02-24", "pesoNeto": 5.6, "disp": 0, "estado": "vacio", "proveedor": "El rabanito loco dos", "costNeto": 4379.68, "lotes": ["260303"]}, {"id": 1780571591282.4507, "numero": 50, "insNombre": "Ciruela", "tipo": "Fruta", "fecha": "2026-02-24", "pesoNeto": 7, "disp": 0, "estado": "vacio", "proveedor": "El rabanito loco dos", "costNeto": 4114.29, "lotes": ["260201"]}, {"id": 1780572383454.336, "numero": 10, "insNombre": "Pera", "tipo": "Fruta", "fecha": "2026-03-27", "pesoNeto": 6.15, "disp": 6.15, "estado": "lleno", "proveedor": "El rabanito loco dos", "costNeto": 2665.98, "lotes": []}, {"id": 1780575201063.6375, "numero": 49, "insNombre": "Naranja", "tipo": "Fruta", "fecha": "2026-04-10", "pesoNeto": 7.5, "disp": 7.5, "estado": "lleno", "proveedor": "El rabanito loco dos", "costNeto": 4390.4, "lotes": []}], "procesosMP": [{"fecha": "2026-02-20", "insNombre": "Ciruela", "tipo": "Fruta", "bruto": 15, "neto": 14.8, "desp": 1.3333333333333286, "costKg": 4000, "costNeto": 4054.05, "proveedor": "El rabanito loco 2", "baldes": [15, 13]}, {"fecha": "2026-02-20", "insNombre": "Durazno", "tipo": "Fruta", "bruto": 20, "neto": 18.5, "desp": 7.5, "costKg": 3988, "costNeto": 4311.35, "proveedor": "El rabanito loco 2", "baldes": [3, 5, 2, 12]}, {"fecha": "2026-02-24", "insNombre": "Ciruela", "tipo": "Fruta", "bruto": 22.46, "neto": 14.8, "desp": 34.10507569011576, "costKg": 4000, "costNeto": 6070.27, "proveedor": "El rabanito loco 2", "baldes": [14, 17]}, {"fecha": "2026-02-24", "insNombre": "Durazno", "tipo": "Fruta", "bruto": 18.445, "neto": 17.1, "desp": 7.291949037679582, "costKg": 3988, "costNeto": 4301.68, "proveedor": "El rabanito loco 2", "baldes": [16, 7, 20]}, {"fecha": "2026-02-24", "insNombre": "Durazno", "tipo": "Fruta", "bruto": 18.445, "neto": 17.1, "desp": 7.291949037679582, "costKg": 3988, "costNeto": 4301.68, "proveedor": "El rabanito loco 2", "baldes": [16, 7, 20]}, {"fecha": "2026-05-24", "insNombre": "Durazno", "tipo": "Fruta", "bruto": 14, "neto": 12, "desp": 14.285714285714285, "costKg": 2000, "costNeto": 2333.33, "proveedor": "", "baldes": [16]}, {"fecha": "2026-05-24", "insNombre": "Durazno", "tipo": "Fruta", "bruto": 14, "neto": 12, "desp": 14.285714285714285, "costKg": 2000, "costNeto": 2333.33, "proveedor": "", "baldes": [16]}, {"fecha": "2026-02-20", "insNombre": "Ciruela", "tipo": "Fruta", "bruto": 15, "neto": 14.8, "desp": 1.3333333333333286, "costKg": 4000, "costNeto": 4054.05, "proveedor": "El rabanito loco dos", "baldes": [15, 13]}, {"fecha": "2026-02-24", "insNombre": "Durazno", "tipo": "Fruta", "bruto": 6.15, "neto": 5.6, "desp": 8.94308943089432, "costKg": 3988, "costNeto": 4379.68, "proveedor": "El rabanito loco dos", "baldes": [16]}, {"fecha": "2026-02-24", "insNombre": "Ciruela", "tipo": "Fruta", "bruto": 7.2, "neto": 7, "desp": 2.77777777777778, "costKg": 4000, "costNeto": 4114.29, "proveedor": "El rabanito loco dos", "baldes": [50]}, {"fecha": "2026-03-27", "insNombre": "Pera", "tipo": "Fruta", "bruto": 53.945, "neto": 48.3, "desp": 10.464361850032446, "costKg": 2387, "costNeto": 2665.98, "proveedor": "El rabanito loco dos", "baldes": [2, 10, 20, 7, 17, 5, 14, 12]}, {"fecha": "2026-04-01", "insNombre": "Membrillo", "tipo": "Fruta", "bruto": 18.83, "neto": 17.9, "desp": 4.938927243759957, "costKg": 1780.61, "costNeto": 1873.12, "proveedor": "El rabanito loco dos", "baldes": [3, 16]}, {"fecha": "2026-04-09", "insNombre": "Naranja", "tipo": "Fruta", "bruto": 29.6, "neto": 22.4, "desp": 24.324324324324333, "costKg": 3360, "costNeto": 4440, "proveedor": "El rabanito loco dos", "baldes": [13, 3, 15]}, {"fecha": "2026-04-10", "insNombre": "Naranja", "tipo": "Fruta", "bruto": 9.8, "neto": 7.5, "desp": 23.469387755102048, "costKg": 3360, "costNeto": 4390.4, "proveedor": "El rabanito loco dos", "baldes": [49]}], "kardex": {"Azúcar": [{"fecha": "21/5/2026", "tipo": "Saldo inicial", "entrada": 100, "salida": 0, "saldo": 100, "costo": 1000, "ref": "Alta de insumo"}, {"fecha": "21/5/2026", "tipo": "Consumo producción", "entrada": 0, "salida": 15, "saldo": 85, "costo": 1000, "ref": "Lote L-AUTO-1"}, {"fecha": "21/5/2026", "tipo": "Consumo producción", "entrada": 0, "salida": 14, "saldo": 71, "costo": 1000, "ref": "Lote 260202"}, {"fecha": "2/6/2026", "tipo": "Consumo producción", "entrada": 0, "salida": 10, "saldo": 61, "costo": 1000, "ref": "Lote 260301"}, {"fecha": "2/6/2026", "tipo": "Consumo producción", "entrada": 0, "salida": 8, "saldo": 53, "costo": 1000, "ref": "Lote 260302"}, {"fecha": "2/6/2026", "tipo": "Consumo producción", "entrada": 0, "salida": 6, "saldo": 47, "costo": 1000, "ref": "Lote 260303"}, {"fecha": "2/6/2026", "tipo": "Consumo producción", "entrada": 0, "salida": 4, "saldo": 43, "costo": 1000, "ref": "Lote 260304"}, {"fecha": "2/6/2026", "tipo": "Consumo producción", "entrada": 0, "salida": 4, "saldo": 39, "costo": 1000, "ref": "Lote 260305"}, {"fecha": "4/6/2026", "tipo": "Anulación lote", "entrada": 15, "salida": 0, "saldo": 54, "costo": 1000, "ref": "Anulación L-AUTO-1"}, {"fecha": "4/6/2026", "tipo": "Consumo producción", "entrada": 0, "salida": 15, "saldo": 39, "costo": 1000, "ref": "Lote 260201"}, {"fecha": "4/6/2026", "tipo": "Anulación lote", "entrada": 4, "salida": 0, "saldo": 43, "costo": 1000, "ref": "Anulación 260304"}, {"fecha": "4/6/2026", "tipo": "Consumo producción", "entrada": 0, "salida": 4, "saldo": 39, "costo": 1000, "ref": "Lote 260304"}, {"fecha": "4/6/2026", "tipo": "Consumo producción", "entrada": 0, "salida": 14, "saldo": 25, "costo": 1000, "ref": "Lote 260401"}], "Ciruela": [{"fecha": "21/5/2026", "tipo": "Procesamiento MP", "entrada": 14.8, "salida": 0, "saldo": 14.8, "costo": 4054.05, "ref": "Proc. B15/B13"}, {"fecha": "21/5/2026", "tipo": "Procesamiento MP", "entrada": 14.8, "salida": 0, "saldo": 29.6, "costo": 6070.27, "ref": "Proc. B14/B17"}, {"fecha": "21/5/2026", "tipo": "Consumo producción", "entrada": 0, "salida": 22, "saldo": 7.6, "costo": 4054.05, "ref": "Lote L-AUTO-1"}, {"fecha": "2/6/2026", "tipo": "Procesamiento MP", "entrada": 14.8, "salida": 0, "saldo": 22.4, "costo": 4054.05, "ref": "Proc. B15/B13"}, {"fecha": "2/6/2026", "tipo": "Consumo producción", "entrada": 0, "salida": 14.7, "saldo": 7.7, "costo": 6070.27, "ref": "Lote 260301"}, {"fecha": "4/6/2026", "tipo": "Anulación lote", "entrada": 22, "salida": 0, "saldo": 29.7, "costo": 4054.05, "ref": "Anulación L-AUTO-1"}, {"fecha": "4/6/2026", "tipo": "Procesamiento MP", "entrada": 7, "salida": 0, "saldo": 36.7, "costo": 4114.29, "ref": "Proc. B50"}, {"fecha": "4/6/2026", "tipo": "Consumo producción", "entrada": 0, "salida": 22, "saldo": 14.7, "costo": 4073.48, "ref": "Lote 260201"}], "Durazno": [{"fecha": "21/5/2026", "tipo": "Procesamiento MP", "entrada": 18.5, "salida": 0, "saldo": 18.5, "costo": 4311.35, "ref": "Proc. B3/B5/B2/B12"}, {"fecha": "21/5/2026", "tipo": "Procesamiento MP", "entrada": 17.1, "salida": 0, "saldo": 35.6, "costo": 4301.68, "ref": "Proc. B16/B7/B20"}, {"fecha": "21/5/2026", "tipo": "Consumo producción", "entrada": 0, "salida": 19.9, "saldo": 15.7, "costo": 4304.63, "ref": "Lote 260202"}, {"fecha": "2/6/2026", "tipo": "Consumo producción", "entrada": 0, "salida": 10.4, "saldo": 5.3, "costo": 4311.35, "ref": "Lote 260302"}, {"fecha": "2/6/2026", "tipo": "Procesamiento MP", "entrada": 5.6, "salida": 0, "saldo": 10.9, "costo": 4379.68, "ref": "Proc. B16"}, {"fecha": "2/6/2026", "tipo": "Consumo producción", "entrada": 0, "salida": 8.7, "saldo": 2.2, "costo": 4355.33, "ref": "Lote 260303"}], "Ácido cítrico": [{"fecha": "21/5/2026", "tipo": "Consumo producción", "entrada": 0, "salida": 21, "saldo": 0, "costo": 85, "ref": "Lote L-AUTO-1"}, {"fecha": "21/5/2026", "tipo": "Consumo producción", "entrada": 0, "salida": 36, "saldo": 0, "costo": 85, "ref": "Lote 260202"}, {"fecha": "2/6/2026", "tipo": "Consumo producción", "entrada": 0, "salida": 14, "saldo": 0, "costo": 85, "ref": "Lote 260301"}, {"fecha": "2/6/2026", "tipo": "Consumo producción", "entrada": 0, "salida": 10, "saldo": 0, "costo": 85, "ref": "Lote 260302"}, {"fecha": "2/6/2026", "tipo": "Consumo producción", "entrada": 0, "salida": 9, "saldo": 0, "costo": 85, "ref": "Lote 260303"}, {"fecha": "4/6/2026", "tipo": "Anulación lote", "entrada": 21, "salida": 0, "saldo": 21, "costo": 85, "ref": "Anulación L-AUTO-1"}, {"fecha": "4/6/2026", "tipo": "Consumo producción", "entrada": 0, "salida": 21, "saldo": 0, "costo": 85, "ref": "Lote 260201"}, {"fecha": "4/6/2026", "tipo": "Consumo producción", "entrada": 0, "salida": 17, "saldo": 0, "costo": 85, "ref": "Lote 260401"}], "Frasco y tapa": [{"fecha": "21/5/2026", "tipo": "Consumo producción", "entrada": 0, "salida": 70, "saldo": 0, "costo": 1000, "ref": "Lote L-AUTO-1"}, {"fecha": "21/5/2026", "tipo": "Consumo producción", "entrada": 0, "salida": 52, "saldo": 0, "costo": 1000, "ref": "Lote 260202"}, {"fecha": "2/6/2026", "tipo": "Consumo producción", "entrada": 0, "salida": 41, "saldo": 0, "costo": 1000, "ref": "Lote 260301"}, {"fecha": "2/6/2026", "tipo": "Consumo producción", "entrada": 0, "salida": 35, "saldo": 0, "costo": 1000, "ref": "Lote 260302"}, {"fecha": "2/6/2026", "tipo": "Consumo producción", "entrada": 0, "salida": 24, "saldo": 0, "costo": 1000, "ref": "Lote 260303"}, {"fecha": "2/6/2026", "tipo": "Consumo producción", "entrada": 0, "salida": 20, "saldo": 0, "costo": 1000, "ref": "Lote 260305"}, {"fecha": "4/6/2026", "tipo": "Anulación lote", "entrada": 70, "salida": 0, "saldo": 70, "costo": 1000, "ref": "Anulación L-AUTO-1"}, {"fecha": "4/6/2026", "tipo": "Consumo producción", "entrada": 0, "salida": 70, "saldo": 0, "costo": 1000, "ref": "Lote 260201"}, {"fecha": "4/6/2026", "tipo": "Consumo producción", "entrada": 0, "salida": 18, "saldo": 0, "costo": 1000, "ref": "Lote 260304"}], "Etiquetas": [{"fecha": "21/5/2026", "tipo": "Consumo producción", "entrada": 0, "salida": 70, "saldo": 0, "costo": 208, "ref": "Lote L-AUTO-1"}, {"fecha": "21/5/2026", "tipo": "Consumo producción", "entrada": 0, "salida": 52, "saldo": 0, "costo": 208, "ref": "Lote 260202"}, {"fecha": "2/6/2026", "tipo": "Consumo producción", "entrada": 0, "salida": 41, "saldo": 0, "costo": 208, "ref": "Lote 260301"}, {"fecha": "2/6/2026", "tipo": "Consumo producción", "entrada": 0, "salida": 35, "saldo": 0, "costo": 208, "ref": "Lote 260302"}, {"fecha": "2/6/2026", "tipo": "Consumo producción", "entrada": 0, "salida": 24, "saldo": 0, "costo": 208, "ref": "Lote 260303"}, {"fecha": "2/6/2026", "tipo": "Consumo producción", "entrada": 0, "salida": 20, "saldo": 0, "costo": 208, "ref": "Lote 260305"}, {"fecha": "4/6/2026", "tipo": "Anulación lote", "entrada": 70, "salida": 0, "saldo": 70, "costo": 208, "ref": "Anulación L-AUTO-1"}, {"fecha": "4/6/2026", "tipo": "Consumo producción", "entrada": 0, "salida": 70, "saldo": 0, "costo": 208, "ref": "Lote 260201"}, {"fecha": "4/6/2026", "tipo": "Consumo producción", "entrada": 0, "salida": 18, "saldo": 0, "costo": 208, "ref": "Lote 260304"}, {"fecha": "4/6/2026", "tipo": "Consumo producción", "entrada": 0, "salida": 42, "saldo": 0, "costo": 208, "ref": "Lote 260401"}], "Leche de oveja": [{"fecha": "2/6/2026", "tipo": "Saldo inicial", "entrada": 17.5, "salida": 0, "saldo": 17.5, "costo": 2000, "ref": "Alta de insumo"}, {"fecha": "2/6/2026", "tipo": "Consumo producción", "entrada": 0, "salida": 17.5, "saldo": 0, "costo": 2000, "ref": "Lote 260304"}, {"fecha": "2/6/2026", "tipo": "Consumo producción", "entrada": 0, "salida": 17.5, "saldo": 0, "costo": 2000, "ref": "Lote 260305"}, {"fecha": "4/6/2026", "tipo": "Anulación lote", "entrada": 17.5, "salida": 0, "saldo": 17.5, "costo": 2000, "ref": "Anulación 260304"}, {"fecha": "4/6/2026", "tipo": "Consumo producción", "entrada": 0, "salida": 17.5, "saldo": 0, "costo": 2000, "ref": "Lote 260304"}], "Bicarbonato de sodio": [{"fecha": "2/6/2026", "tipo": "Saldo inicial", "entrada": 5000, "salida": 0, "saldo": 5000, "costo": 4.5, "ref": "Alta de insumo"}, {"fecha": "2/6/2026", "tipo": "Consumo producción", "entrada": 0, "salida": 36, "saldo": 4964, "costo": 4.5, "ref": "Lote 260304"}, {"fecha": "2/6/2026", "tipo": "Consumo producción", "entrada": 0, "salida": 36, "saldo": 4928, "costo": 4.5, "ref": "Lote 260305"}, {"fecha": "4/6/2026", "tipo": "Anulación lote", "entrada": 36, "salida": 0, "saldo": 4964, "costo": 4.5, "ref": "Anulación 260304"}, {"fecha": "4/6/2026", "tipo": "Consumo producción", "entrada": 0, "salida": 36, "saldo": 4928, "costo": 4.5, "ref": "Lote 260304"}], "Pera": [{"fecha": "4/6/2026", "tipo": "Procesamiento MP", "entrada": 48.3, "salida": 0, "saldo": 48.3, "costo": 2665.98, "ref": "Proc. B2/B10/B20/B7/B17/B5/B14/B12"}], "Membrillo": [{"fecha": "4/6/2026", "tipo": "Procesamiento MP", "entrada": 17.9, "salida": 0, "saldo": 17.9, "costo": 1873.12, "ref": "Proc. B3/B16"}, {"fecha": "4/6/2026", "tipo": "Consumo producción", "entrada": 0, "salida": 17.6, "saldo": 0.3, "costo": 1873.12, "ref": "Lote 260401"}], "Bandeja plástica": [{"fecha": "4/6/2026", "tipo": "Consumo producción", "entrada": 0, "salida": 42, "saldo": 0, "costo": 100, "ref": "Lote 260401"}], "Bolsas de vacío": [{"fecha": "4/6/2026", "tipo": "Consumo producción", "entrada": 0, "salida": 42, "saldo": 0, "costo": 1500, "ref": "Lote 260401"}], "Naranja": [{"fecha": "4/6/2026", "tipo": "Procesamiento MP", "entrada": 22.4, "salida": 0, "saldo": 22.4, "costo": 4440, "ref": "Proc. B13/B3/B15"}, {"fecha": "4/6/2026", "tipo": "Procesamiento MP", "entrada": 7.5, "salida": 0, "saldo": 29.9, "costo": 4390.4, "ref": "Proc. B49"}]}, "fijos": {"salario": 1500000, "prodAnual": 8000, "luz": 20500, "gas": 74500, "agua": 30000, "otros": 0, "admin": 5, "margen": 30, "amortizaciones": [{"nombre": "Paila", "valor": 10000000, "vida": 10}]}};
+    ['baldes','procesosMP','ventas','movimientos','historial','lotes','insumos','recetas'].forEach(k=>{if(!Array.isArray(D[k]))D[k]=[];});
+    if(!D.stock||typeof D.stock!=='object')D.stock={prod:[],dep:[],ven:[]};
+    if(!D.kardex||typeof D.kardex!=='object')D.kardex={};
+    if(!D.fijos||typeof D.fijos!=='object')D.fijos={salario:0,prodAnual:8000,luz:0,gas:0,agua:0,otros:0,admin:0,margen:30,amortizaciones:[]};
+    await pushData();
+    toast('✓ Datos históricos cargados y guardados');
+  }
+  document.getElementById('loading-overlay').style.display='none';
+  renderAll();renderDashboard();
+  document.getElementById('prod-fecha').value=new Date().toISOString().split('T')[0];
+  setInterval(async()=>{await fetchData();renderDashboard();renderInsumos();},30000);
+}
+init();
+</script>
+</body>
+</html>
