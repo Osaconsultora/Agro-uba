@@ -287,7 +287,7 @@ tr:hover td{background:#f8faff}
       <div id="prod-consumos"></div>
     </div>
     <div class="frow" style="margin-top:14px">
-      <div class="fg"><label>Unidades finales obtenidas</label><input id="prod-unidades" type="number" placeholder="0" step="0.1" oninput="calcLote()"></div>
+      <div class="fg"><label>Unidades finales obtenidas</label><input id="prod-unidades" type="number" placeholder="0" step="1" min="1" oninput="this.value=Math.floor(this.value)||this.value;calcLote()"></div>
       <div class="fg"><label>Envase</label><select id="prod-envase"><option>frasco 454g</option><option>frasco 600g</option><option>frasco 800g</option><option>botella 330cc</option><option>botella 660cc</option><option>bandeja 500g</option><option>otro</option></select></div>
       <div class="fg"><label>Observaciones</label><input id="prod-obs"></div>
     </div>
@@ -788,7 +788,15 @@ function renderRecetas(){
 }
 function updSelRec(){
   const opts=D.recetas.map((r,i)=>`<option value="${i}">${r.nombre}</option>`).join('');
-  ['prod-rec','costo-sel'].forEach(id=>{const el=document.getElementById(id);if(el){const p=el.value;el.innerHTML='<option value="">-- seleccionar --</option>'+opts;el.value=p;}});
+  ['prod-rec','costo-sel'].forEach(id=>{
+    const el=document.getElementById(id);
+    if(el){
+      const p=el.value;
+      el.innerHTML='<option value="">-- seleccionar --</option>'+opts;
+      // solo restaurar si el valor sigue siendo válido
+      if(p!==''&&D.recetas[parseInt(p)])el.value=p;
+    }
+  });
   const hs=document.getElementById('hist-sel');if(hs){const p=hs.value;hs.innerHTML='<option value="">Todos</option>'+opts;hs.value=p;}
 }
 
@@ -1197,7 +1205,22 @@ async function init(){
   document.getElementById('loading-overlay').style.display='none';
   renderAll();renderDashboard();
   document.getElementById('prod-fecha').value=new Date().toISOString().split('T')[0];
-  setInterval(async()=>{if(!saving){await fetchData();renderDashboard();renderInsumos();}},30000);
+  setInterval(async()=>{
+  if(!saving){
+    // guardar valores actuales del formulario de producción
+    const recVal=document.getElementById('prod-rec')?.value;
+    const uVal=document.getElementById('prod-unidades')?.value;
+    const loteVal=document.getElementById('prod-lote')?.value;
+    const mepVal=document.getElementById('prod-mep')?.value;
+    await fetchData();
+    renderDashboard();renderInsumos();
+    // restaurar valores del formulario
+    if(recVal&&document.getElementById('prod-rec'))document.getElementById('prod-rec').value=recVal;
+    if(uVal&&document.getElementById('prod-unidades'))document.getElementById('prod-unidades').value=uVal;
+    if(loteVal&&document.getElementById('prod-lote'))document.getElementById('prod-lote').value=loteVal;
+    if(mepVal&&document.getElementById('prod-mep'))document.getElementById('prod-mep').value=mepVal;
+  }
+},30000);
 }
 init();
 </script>
