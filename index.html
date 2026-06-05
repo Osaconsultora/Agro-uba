@@ -434,12 +434,7 @@ async function fetchData(){
 }
 async function pushData(){
   if(saving)return;saving=true;setSS('syncing','Guardando...');
-  try{
-    const r=await fetch(SCRIPT_URL,{method:'POST',body:JSON.stringify(D),headers:{'Content-Type':'text/plain'}});
-    const txt=await r.text();
-    if(txt!=='ok')throw new Error('Respuesta inesperada: '+txt);
-    setSS('ok','Conectado · datos compartidos');setLS();
-  }
+  try{await fetch(SCRIPT_URL,{method:'POST',body:JSON.stringify(D),headers:{'Content-Type':'text/plain'}});setSS('ok','Conectado · datos compartidos');setLS();}
   catch(e){setSS('error','No se pudo guardar — reintentando...');setTimeout(pushData,3000);}
   finally{saving=false;}
 }
