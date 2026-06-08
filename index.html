@@ -389,7 +389,7 @@ tr:hover td{background:#f8faff}
 
 </div><!-- /content -->
 <script>
-const SCRIPT_URL='https://script.google.com/macros/s/AKfycbwtdZE9G9IS6kJ7-A0O8tNSf1PVUGNwk_7luO0DihY2ygyzV6jM27xujIld_uNbczWh/exec';
+const SCRIPT_URL='https://script.google.com/macros/s/AKfycbwgoFJHO0c5OVGP1v6gLy5z3VE-bIfPIMGlavlpNZHdtXix2muEU0WMR4wiOwn3KyZ7/exec';
 
 // ── ESTADO INICIAL LIMPIO ─────────────────────────────────────────────────────
 function estadoLimpio(){
@@ -419,8 +419,9 @@ async function fetchData(){
     if(txt&&txt!=='null'){
       const p=JSON.parse(txt);
       if(p&&typeof p==='object'){
-        D=p;
-        // garantizar arrays y objetos necesarios
+        // nuevo formato: cada clave viene separada
+        const keys=['insumos','recetas','lotes','stock','movimientos','historial','baldes','procesosMP','kardex','fijos','ventas'];
+        keys.forEach(k=>{if(p[k]!==undefined&&p[k]!==null)D[k]=p[k];});
         ['baldes','procesosMP','ventas','movimientos','historial','lotes','insumos','recetas'].forEach(k=>{if(!Array.isArray(D[k]))D[k]=[];});
         if(!D.stock||typeof D.stock!=='object')D.stock={prod:[],dep:[],ven:[]};
         ['prod','dep','ven'].forEach(k=>{if(!Array.isArray(D.stock[k]))D.stock[k]=[];});
@@ -434,7 +435,10 @@ async function fetchData(){
 }
 async function pushData(){
   if(saving)return;saving=true;setSS('syncing','Guardando...');
-  try{await fetch(SCRIPT_URL,{method:'POST',body:JSON.stringify(D),headers:{'Content-Type':'text/plain'}});setSS('ok','Conectado · datos compartidos');setLS();}
+  try{
+    await fetch(SCRIPT_URL,{method:'POST',body:JSON.stringify(D),headers:{'Content-Type':'text/plain'}});
+    setSS('ok','Conectado · datos compartidos');setLS();
+  }
   catch(e){setSS('error','No se pudo guardar — reintentando...');setTimeout(pushData,3000);}
   finally{saving=false;}
 }
